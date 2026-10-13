@@ -1,0 +1,32 @@
+# Archivos generados por .NET y Visual Studio
+[Bb]in/
+[Oo]bj/
+.vs/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# Archivos de usuario de Visual Studio
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Archivos de compilación y temporales
+*.cache
+*.tmp
+*.log
+
+# Configuración local y secretos
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+secrets.json
+
+# Archivos del sistema operativo
+Thumbs.db
+.DS_Store
