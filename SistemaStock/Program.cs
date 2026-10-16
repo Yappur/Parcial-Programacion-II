@@ -2,16 +2,22 @@ namespace SistemaStock
 {
     internal static class Program
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
-            Application.Run(new Form1());
+            try
+            {
+                // Inicializa la base de datos compartida (si corresponde)
+                Database.Initialize();
+                // Ejecuta el formulario de login consolidado (FrmLogin)
+                Application.Run(new Forms.FrmLogin());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("No se pudo iniciar la aplicación. Revisá la conexión a la base de datos.\n\n" + ex.Message,
+                    "Error de inicio", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }
