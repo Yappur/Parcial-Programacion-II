@@ -1,6 +1,6 @@
 using MySqlConnector;
 
-namespace GestionVentas;
+namespace SistemaStock;
 
 internal static class Database
 {

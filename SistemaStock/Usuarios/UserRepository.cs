@@ -1,6 +1,6 @@
 using MySqlConnector;
 
-namespace GestionVentas;
+namespace SistemaStock;
 
 internal sealed class UserRepository
 {
@@ -76,3 +76,4 @@ internal sealed class UserRepository
         IsActive = reader.GetBoolean("activo")
     };
 }
+

@@ -1,6 +1,6 @@
-namespace GestionVentas;
+namespace SistemaStock;
 
-internal sealed class User
+public sealed class User
 {
     public int Id { get; set; }
     public string Username { get; set; } = "";
@@ -9,7 +9,7 @@ internal sealed class User
     public bool IsActive { get; set; }
 }
 
-internal static class UserPermissions
+public static class UserPermissions
 {
     public static bool CanManageUsers(User user) => user.Role == "Administrador";
 }

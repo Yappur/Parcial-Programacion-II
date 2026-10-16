@@ -1,4 +1,4 @@
-﻿namespace SistemaStock
+﻿namespace SistemaStock.Forms
 {
     partial class FrmLogin
     {

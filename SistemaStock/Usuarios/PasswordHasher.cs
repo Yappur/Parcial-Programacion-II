@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace GestionVentas;
+namespace SistemaStock;
 
 internal static class PasswordHasher
 {
