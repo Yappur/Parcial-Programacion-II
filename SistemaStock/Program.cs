@@ -6,18 +6,20 @@ namespace SistemaStock
         static void Main()
         {
             ApplicationConfiguration.Initialize();
+
+            // Aseguramos que la base de datos y la tabla 'usuarios' existan
+            // antes de mostrar el formulario de login.
             try
             {
-                // Inicializa la base de datos compartida (si corresponde)
                 Database.Initialize();
-                // Ejecuta el formulario de login consolidado (FrmLogin)
-                Application.Run(new Forms.FrmLogin());
             }
             catch (Exception ex)
             {
-                MessageBox.Show("No se pudo iniciar la aplicación. Revisá la conexión a la base de datos.\n\n" + ex.Message,
-                    "Error de inicio", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error inicializando la base de datos: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
+
+            Application.Run(new Forms.FrmLogin());
         }
     }
 }
