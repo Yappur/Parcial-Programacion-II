@@ -21,9 +21,8 @@
     <PackageReference Include="MySqlConnector" Version="2.4.0" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="Recursos\fondo-chachin.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <None Remove="Recursos\fondo-chachin.png" />
+    <EmbeddedResource Include="Recursos\fondo-chachin.png" LogicalName="SistemaStock.Properties.Resources.fondo-chachin.png" />
   </ItemGroup>
 
 </Project>

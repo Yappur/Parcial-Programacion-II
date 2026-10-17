@@ -1,22 +1,27 @@
 using System;
 using System.Windows.Forms;
+using SistemaStock.Estilos;
 
-namespace SistemaStock.Forms
+namespace SistemaStock.Formularios
 {
-    internal sealed class FrmUsers : Form
+    public sealed class FrmUsers : BaseFormSidebar
     {
-        private readonly User currentUser;
+        private readonly User? currentUser;
         private readonly UserRepository repository = new();
-        private readonly DataGridView grid = new() { Dock = DockStyle.Fill, ReadOnly = true, AutoGenerateColumns = true, SelectionMode = DataGridViewSelectionMode.FullRowSelect, MultiSelect = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill };
+        private readonly DataGridView grid = new() { Dock = DockStyle.Fill, AutoGenerateColumns = true };
         private readonly TextBox search = new() { PlaceholderText = "Buscar usuario o nombre", Width = 220 };
 
-        public FrmUsers(User user)
+        public FrmUsers() : this(null) { }
+
+        public FrmUsers(User? user) : base(PaginaApp.Usuarios, user)
         {
             currentUser = user;
-            Text = $"Gestión de usuarios - {user.FullName} ({user.Role})"; Width = 900; Height = 560; StartPosition = FormStartPosition.CenterScreen;
-            var top = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 48, Padding = new Padding(8) };
-            top.Controls.Add(new Label { Text = $"Sesión: {user.FullName} | Rol: {user.Role}", AutoSize = true, Padding = new Padding(0, 8, 12, 0) });
-            if (UserPermissions.CanManageUsers(user))
+            Theme.StyleGrid(grid);
+            AddPageTitle("Usuarios", "Administración de usuarios del sistema");
+            var top = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 48, Padding = new Padding(0, 8, 0, 8), BackColor = Theme.DeepCharcoal };
+            if (user is not null)
+                top.Controls.Add(new Label { Text = $"Sesión: {user.FullName} | Rol: {user.Role}", AutoSize = true, Padding = new Padding(0, 8, 12, 0), ForeColor = Theme.TextSecondary });
+            if (user is not null && UserPermissions.CanManageUsers(user))
             {
                 var add = new Button { Text = "Crear usuario" }; add.Click += (_, _) => CreateUser(); top.Controls.Add(add);
                 var edit = new Button { Text = "Modificar / contraseña" }; edit.Click += (_, _) => EditUser(); top.Controls.Add(edit);
@@ -24,10 +29,10 @@ namespace SistemaStock.Forms
                 top.Controls.Add(search); search.TextChanged += (_, _) => RefreshUsers();
             }
             else
-                top.Controls.Add(new Label { Text = "Tu rol no permite administrar usuarios.", AutoSize = true, Padding = new Padding(8) });
-            Controls.Add(grid); Controls.Add(top);
-            if (UserPermissions.CanManageUsers(user)) RefreshUsers();
-            else grid.Visible = false;
+                top.Controls.Add(new Label { Text = "Tu rol no permite administrar usuarios.", AutoSize = true, Padding = new Padding(8), ForeColor = Theme.TextSecondary });
+            PageContent.Controls.Add(grid);
+            PageContent.Controls.Add(top);
+            if (user is not null && UserPermissions.CanManageUsers(user)) RefreshUsers();
         }
 
         private User? SelectedUser() => grid.CurrentRow?.DataBoundItem as User;
@@ -57,7 +62,7 @@ namespace SistemaStock.Forms
         private void DeactivateUser()
         {
             var user = SelectedUser(); if (user is null) { MessageBox.Show("Seleccioná un usuario."); return; }
-            if (user.Id == currentUser.Id) { MessageBox.Show("No podés desactivar tu propia cuenta mientras estás usando el sistema."); return; }
+            if (currentUser is not null && user.Id == currentUser.Id) { MessageBox.Show("No podés desactivar tu propia cuenta mientras estás usando el sistema."); return; }
             if (MessageBox.Show($"¿Desactivar a {user.Username}?", "Confirmar", MessageBoxButtons.YesNo) == DialogResult.Yes)
             { repository.Deactivate(user.Id); RefreshUsers(); }
         }
@@ -79,7 +84,7 @@ namespace SistemaStock.Forms
         public UserEditForm(User? user = null)
         {
             isNew = user is null;
-            Text = isNew ? "Crear usuario" : "Modificar usuario"; Width = 380; Height = user is null ? 320 : 360; StartPosition = FormStartPosition.CenterParent;
+            Text = isNew ? "Chachín | Crear usuario" : "Chachín | Modificar usuario"; Width = 380; Height = user is null ? 320 : 360; StartPosition = FormStartPosition.CenterParent;
             roleBox.Items.AddRange(new object[] { "Administrador", "Supervisor", "Vendedor" });
             var panel = new FlowLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(18), FlowDirection = FlowDirection.TopDown, WrapContents = false };
             panel.Controls.Add(new Label { Text = "Nombre de usuario", AutoSize = true }); panel.Controls.Add(usernameBox);

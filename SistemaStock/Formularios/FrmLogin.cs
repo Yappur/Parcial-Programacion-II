@@ -1,11 +1,11 @@
 using System;
 using System.Drawing;
-using System.IO;
 using System.Windows.Forms;
+using SistemaStock.Estilos;
 
-namespace SistemaStock.Forms
+namespace SistemaStock.Formularios
 {
-    public partial class FrmLogin : Form
+    public partial class FrmLogin : BaseForm
     {
         private readonly UserRepository repository = new();
 
@@ -13,9 +13,9 @@ namespace SistemaStock.Forms
         private TextBox txtContrasena = null!;
         private Label lblMensaje = null!;
 
-        private readonly Color fondo = Color.FromArgb(24, 25, 28);
-        private readonly Color panelOscuro = Color.FromArgb(17, 18, 20);
-        private readonly Color naranja = Color.FromArgb(242, 112, 42);
+        private readonly Color fondo = Theme.DeepCharcoal;
+        private readonly Color panelOscuro = Theme.ObsidianBlack;
+        private readonly Color naranja = Theme.BlazeOrange;
 
         public FrmLogin()
         {
@@ -25,21 +25,15 @@ namespace SistemaStock.Forms
 
         private void ConstruirInterfaz()
         {
-            Text = "Chachin | Sistema de gestión";
+            Text = "Chachín";
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
+            MinimumSize = Size.Empty;
+            MaximumSize = Size.Empty;
             ClientSize = new Size(1000, 620);
             BackColor = fondo;
-
-            BackgroundImage = Image.FromFile(
-     Path.Combine(
-         AppDomain.CurrentDomain.BaseDirectory,
-         "Recursos",
-         "Bar Chachín en Luz Ámbar.png"
-     )
- );
-            BackgroundImageLayout = ImageLayout.Stretch;
+            BackgroundImage = null;
 
             label1.Visible = false;
             label2.Visible = false;
@@ -64,25 +58,15 @@ namespace SistemaStock.Forms
                 BackColor = Color.Transparent
             };
 
-            string rutaLogo = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "Recursos",
-                "fondo-chachin.png"
-            );
-
-            if (File.Exists(rutaLogo))
-            {
-                using Image imagen = Image.FromFile(rutaLogo);
-                picLogo.Image = new Bitmap(imagen);
-            }
+            picLogo.Image = SistemaStock.Properties.Resources.FondoChachin;
 
             panelMarca.Controls.Add(picLogo);
 
             Label lblSistema = new()
             {
-                Text = "SISTEMA DE GESTIÓN",
+                Text = "Chachín",
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 17, FontStyle.Bold),
+                Font = new Font("Segoe UI", 25, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Location = new Point(15, 420),
                 Size = new Size(440, 45)
@@ -271,7 +255,7 @@ namespace SistemaStock.Forms
 
         public FirstAdminForm()
         {
-            Text = "Crear administrador";
+            Text = "Chachín | Crear administrador";
             StartPosition = FormStartPosition.CenterParent;
             ClientSize = new Size(360, 290);
             FormBorderStyle = FormBorderStyle.FixedDialog;
