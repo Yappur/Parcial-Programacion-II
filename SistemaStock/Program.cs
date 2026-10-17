@@ -1,3 +1,5 @@
+using SistemaStock.Datos;
+
 namespace SistemaStock
 {
     internal static class Program
@@ -19,7 +21,7 @@ namespace SistemaStock
                 return;
             }
 
-            Application.Run(new Forms.FrmLogin());
+            Application.Run(new Formularios.FrmLogin());
         }
     }
 }

@@ -1,4 +1,4 @@
-namespace SistemaStock;
+namespace SistemaStock.Modelos.Usuarios;
 
 public sealed class User
 {
