@@ -1,7 +1,9 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using SistemaStock.Datos;
 using SistemaStock.Estilos;
+using SistemaStock.Modelos.Usuarios;
 
 namespace SistemaStock.Formularios
 {

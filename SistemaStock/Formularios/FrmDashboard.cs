@@ -1,4 +1,5 @@
 using SistemaStock.Estilos;
+using SistemaStock.Modelos.Usuarios;
 
 namespace SistemaStock.Formularios;
 

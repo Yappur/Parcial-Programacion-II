@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace SistemaStock;
+namespace SistemaStock.Modelos.Usuarios;
 
 internal static class PasswordHasher
 {

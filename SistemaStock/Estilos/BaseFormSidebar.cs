@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 using SistemaStock.Formularios;
+using SistemaStock.Modelos.Usuarios;
 
 namespace SistemaStock.Estilos;
 
@@ -8,7 +9,8 @@ public enum PaginaApp
 {
     Dashboard,
     Productos,
-    Usuarios
+    Usuarios,
+    Ventas
 }
 
 /// <summary>Marco compartido para las pantallas principales y su navegación.</summary>
@@ -61,7 +63,7 @@ public abstract class BaseFormSidebar : BaseForm
         var navegacion = new FlowLayoutPanel
         {
             Dock = DockStyle.Top,
-            Height = 174,
+            Height = 232,
             FlowDirection = FlowDirection.TopDown,
             WrapContents = false,
             BackColor = Theme.ObsidianBlack
@@ -70,6 +72,7 @@ public abstract class BaseFormSidebar : BaseForm
         navegacion.Controls.Add(CrearBoton("Dashboard", PaginaApp.Dashboard));
         navegacion.Controls.Add(CrearBoton("Productos", PaginaApp.Productos));
         navegacion.Controls.Add(CrearBoton("Usuarios", PaginaApp.Usuarios));
+        navegacion.Controls.Add(CrearBoton("Ventas", PaginaApp.Ventas));
 
         pageRoot.Dock = DockStyle.Fill;
         pageRoot.BackColor = Theme.DeepCharcoal;
@@ -142,6 +145,7 @@ public abstract class BaseFormSidebar : BaseForm
             PaginaApp.Dashboard => new FrmDashboard(usuarioActual),
             PaginaApp.Productos => new FrmProductos(usuarioActual),
             PaginaApp.Usuarios => new FrmUsers(usuarioActual),
+            PaginaApp.Ventas => new FrmVentas(usuarioActual),
             _ => throw new ArgumentOutOfRangeException(nameof(destino))
         };
 

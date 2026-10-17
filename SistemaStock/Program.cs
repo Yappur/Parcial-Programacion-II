@@ -1,3 +1,5 @@
+using SistemaStock.Datos;
+
 namespace SistemaStock
 {
     internal static class Program

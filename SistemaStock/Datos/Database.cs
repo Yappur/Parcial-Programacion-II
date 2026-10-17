@@ -1,6 +1,6 @@
 using MySqlConnector;
 
-namespace SistemaStock;
+namespace SistemaStock.Datos;
 
 internal static class Database
 {
@@ -46,5 +46,32 @@ internal static class Database
             ) ENGINE=InnoDB;
             """, connection);
         command.ExecuteNonQuery();
+
+        using var categoryCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS categorias (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                nombre VARCHAR(100) NOT NULL UNIQUE
+            ) ENGINE=InnoDB;
+            """, connection);
+        categoryCommand.ExecuteNonQuery();
+
+        using var productCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS productos (
+                codigo INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                nombre VARCHAR(100) NOT NULL,
+                precio DECIMAL(10,2) NOT NULL CHECK (precio >= 0),
+                stock INT NOT NULL CHECK (stock >= 0),
+                activo BOOLEAN NOT NULL DEFAULT TRUE,
+                categoria_id INT NOT NULL,
+                CONSTRAINT fk_productos_categorias FOREIGN KEY (categoria_id) REFERENCES categorias(id)
+            ) ENGINE=InnoDB;
+            """, connection);
+        productCommand.ExecuteNonQuery();
+
+        using var seedCommand = new MySqlCommand("""
+            INSERT INTO categorias (nombre) VALUES ('Bebidas'), ('Platos'), ('Postres')
+            ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
+            """, connection);
+        seedCommand.ExecuteNonQuery();
     }
 }

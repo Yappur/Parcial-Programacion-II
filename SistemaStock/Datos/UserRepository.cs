@@ -1,6 +1,7 @@
 using MySqlConnector;
+using SistemaStock.Modelos.Usuarios;
 
-namespace SistemaStock;
+namespace SistemaStock.Datos;
 
 internal sealed class UserRepository
 {
