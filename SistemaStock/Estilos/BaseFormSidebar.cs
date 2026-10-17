@@ -14,13 +14,16 @@ public enum PaginaApp
 }
 
 /// <summary>Marco compartido para las pantallas principales y su navegación.</summary>
-public abstract class BaseFormSidebar : BaseForm
+public class BaseFormSidebar : BaseForm
 {
     private readonly PaginaApp paginaActiva;
     private readonly User? usuarioActual;
     private readonly Panel pageRoot = new();
     private readonly Panel pageHeader = new();
     protected Panel PageContent { get; } = new();
+
+    // WinForms designer needs a concrete base type with a public parameterless constructor.
+    public BaseFormSidebar() : this(PaginaApp.Dashboard, null) { }
 
     protected BaseFormSidebar(PaginaApp paginaActiva, User? usuarioActual)
     {
@@ -38,41 +41,62 @@ public abstract class BaseFormSidebar : BaseForm
             BackColor = Theme.ObsidianBlack,
             Padding = new Padding(14, 16, 14, 14)
         };
-        var marca = new Panel { Dock = DockStyle.Top, Height = 145, BackColor = Theme.ObsidianBlack };
-        sidebar.Controls.Add(marca);
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 3,
+            BackColor = Theme.ObsidianBlack,
+            Margin = Padding.Empty
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        sidebar.Controls.Add(layout);
 
         var logo = new PictureBox
         {
             Image = SistemaStock.Properties.Resources.FondoChachin,
             SizeMode = PictureBoxSizeMode.Zoom,
-            Location = new Point(4, 4),
-            Size = new Size(76, 76),
-            BackColor = Theme.ObsidianBlack
+            Dock = DockStyle.Fill,
+            BackColor = Theme.ObsidianBlack,
+            Margin = new Padding(0, 0, 0, 12)
         };
-        marca.Controls.Add(logo);
-        marca.Controls.Add(new Label
-        {
-            Text = "Chachín",
-            ForeColor = Theme.TextPrimary,
-            Font = new Font("Segoe UI", 18F, FontStyle.Bold),
-            Location = new Point(2, 87),
-            Size = new Size(200, 38),
-            TextAlign = ContentAlignment.MiddleLeft
-        });
+        layout.Controls.Add(logo, 0, 0);
 
         var navegacion = new FlowLayoutPanel
         {
-            Dock = DockStyle.Top,
-            Height = 232,
+            Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.TopDown,
             WrapContents = false,
             BackColor = Theme.ObsidianBlack
         };
-        sidebar.Controls.Add(navegacion);
+        layout.Controls.Add(navegacion, 0, 1);
         navegacion.Controls.Add(CrearBoton("Dashboard", PaginaApp.Dashboard));
         navegacion.Controls.Add(CrearBoton("Productos", PaginaApp.Productos));
         navegacion.Controls.Add(CrearBoton("Usuarios", PaginaApp.Usuarios));
         navegacion.Controls.Add(CrearBoton("Ventas", PaginaApp.Ventas));
+
+        var cerrarSesion = new Button
+        {
+            Text = "Cerrar sesión",
+            Dock = DockStyle.Fill,
+            Margin = Padding.Empty,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Theme.Surface,
+            ForeColor = Theme.TextPrimary,
+            Font = Theme.BodyFont,
+            Cursor = Cursors.Hand
+        };
+        cerrarSesion.FlatAppearance.BorderColor = Theme.BlazeOrange;
+        cerrarSesion.FlatAppearance.BorderSize = 1;
+        cerrarSesion.Click += (_, _) =>
+        {
+            DialogResult = DialogResult.Retry;
+            Close();
+        };
+        layout.Controls.Add(cerrarSesion, 0, 2);
 
         pageRoot.Dock = DockStyle.Fill;
         pageRoot.BackColor = Theme.DeepCharcoal;
@@ -91,7 +115,7 @@ public abstract class BaseFormSidebar : BaseForm
 
     private Button CrearBoton(string texto, PaginaApp destino)
     {
-        var boton = new Button { Text = texto, Width = 205, Height = 48, Margin = new Padding(0, 0, 0, 8) };
+        var boton = new Button { Text = texto, Width = 207, Height = 48, Margin = new Padding(0, 0, 0, 8) };
         Theme.StyleNavigationButton(boton, destino == paginaActiva);
         boton.Click += (_, _) => Navegar(destino);
         return boton;
@@ -154,11 +178,15 @@ public abstract class BaseFormSidebar : BaseForm
             Hide();
             try
             {
-                siguiente.ShowDialog(this);
+                if (siguiente.ShowDialog(this) == DialogResult.Retry)
+                {
+                    DialogResult = DialogResult.Retry;
+                    Close();
+                }
             }
             finally
             {
-                if (!IsDisposed)
+                if (!IsDisposed && DialogResult != DialogResult.Retry)
                 {
                     Show();
                     Activate();

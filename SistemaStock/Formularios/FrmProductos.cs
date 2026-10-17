@@ -63,8 +63,10 @@ public partial class FrmProductos : BaseFormSidebar
             });
         }
 
-        PageContent.Controls.Add(top);
+        // Keep the same Dock ordering as FrmUsers: the toolbar reserves its row,
+        // and the grid fills only the space below it.
         PageContent.Controls.Add(grid);
+        PageContent.Controls.Add(top);
     }
 
     private Producto? ProductoSeleccionado() => grid.CurrentRow?.DataBoundItem as Producto;

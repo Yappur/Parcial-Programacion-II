@@ -233,7 +233,18 @@ namespace SistemaStock.Formularios
 
                 Hide();
                 using FrmDashboard home = new(user);
-                home.ShowDialog(this);
+                DialogResult result = home.ShowDialog(this);
+                if (result == DialogResult.Retry)
+                {
+                    txtUsuario.Clear();
+                    txtContrasena.Clear();
+                    lblMensaje.Text = "Sesión cerrada. Ingresá nuevamente para continuar.";
+                    Show();
+                    Activate();
+                    txtUsuario.Focus();
+                    return;
+                }
+
                 Close();
             }
             catch (Exception ex)

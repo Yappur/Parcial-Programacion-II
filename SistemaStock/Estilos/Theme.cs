@@ -49,7 +49,10 @@ public static class Theme
         grid.ColumnHeadersDefaultCellStyle.BackColor = ObsidianBlack;
         grid.ColumnHeadersDefaultCellStyle.ForeColor = TextPrimary;
         grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        grid.ColumnHeadersVisible = true;
         grid.ColumnHeadersHeight = 42;
+        grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+        grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None;
         grid.DefaultCellStyle.BackColor = Surface;
         grid.DefaultCellStyle.ForeColor = TextPrimary;
         grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(74, 52, 40);
