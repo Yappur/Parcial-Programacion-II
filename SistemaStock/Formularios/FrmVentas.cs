@@ -3,11 +3,11 @@ using SistemaStock.Modelos.Usuarios;
 
 namespace SistemaStock.Formularios;
 
-public partial class FrmVentas : BaseFormSidebar
+public partial class FrmVentas : BasePage
 {
     public FrmVentas() : this(null) { }
 
-    public FrmVentas(User? user) : base(PaginaApp.Ventas, user)
+    public FrmVentas(User? user)
     {
         InitializeComponent();
         AddPageTitle("Ventas", "Registro y seguimiento de ventas");

@@ -1,5 +1,4 @@
 using System.Drawing;
-using System.Windows.Forms;
 using SistemaStock.Formularios;
 using SistemaStock.Modelos.Usuarios;
 
@@ -13,64 +12,53 @@ public enum PaginaApp
     Ventas
 }
 
-/// <summary>Marco compartido para las pantallas principales y su navegación.</summary>
+/// <summary>Ventana principal única: conserva el sidebar y aloja una página a la vez.</summary>
 public class BaseFormSidebar : BaseForm
 {
-    private readonly PaginaApp paginaActiva;
-    private readonly User? usuarioActual;
-    private readonly Panel pageRoot = new();
-    private readonly Panel pageHeader = new();
+    private readonly User usuarioActual;
     protected Panel PageContent { get; } = new();
+    private readonly Dictionary<PaginaApp, Button> botones = new();
+    private UserControl? paginaActual;
+    private PaginaApp? paginaActiva;
 
-    // WinForms designer needs a concrete base type with a public parameterless constructor.
+    // WinForms designer needs a public parameterless constructor.
     public BaseFormSidebar() : this(PaginaApp.Dashboard, null) { }
 
-    protected BaseFormSidebar(PaginaApp paginaActiva, User? usuarioActual)
+    protected BaseFormSidebar(PaginaApp paginaInicial, User? usuario)
     {
-        this.paginaActiva = paginaActiva;
-        this.usuarioActual = usuarioActual;
+        usuarioActual = usuario ?? new User();
         ConstruirSidebar();
+        Navegar(paginaInicial);
     }
 
     private void ConstruirSidebar()
     {
         var sidebar = new Panel
         {
-            Dock = DockStyle.Left,
-            Width = 235,
-            BackColor = Theme.ObsidianBlack,
+            Dock = DockStyle.Left, Width = 235, BackColor = Theme.ObsidianBlack,
             Padding = new Padding(14, 16, 14, 14)
         };
         var layout = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 3,
-            BackColor = Theme.ObsidianBlack,
-            Margin = Padding.Empty
+            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3,
+            BackColor = Theme.ObsidianBlack, Margin = Padding.Empty
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
         sidebar.Controls.Add(layout);
-
-        var logo = new PictureBox
+        layout.Controls.Add(new PictureBox
         {
             Image = SistemaStock.Properties.Resources.FondoChachin,
-            SizeMode = PictureBoxSizeMode.Zoom,
-            Dock = DockStyle.Fill,
-            BackColor = Theme.ObsidianBlack,
-            Margin = new Padding(0, 0, 0, 12)
-        };
-        layout.Controls.Add(logo, 0, 0);
+            SizeMode = PictureBoxSizeMode.Zoom, Dock = DockStyle.Fill,
+            BackColor = Theme.ObsidianBlack, Margin = new Padding(0, 0, 0, 12)
+        }, 0, 0);
 
         var navegacion = new FlowLayoutPanel
         {
-            Dock = DockStyle.Fill,
-            FlowDirection = FlowDirection.TopDown,
-            WrapContents = false,
-            BackColor = Theme.ObsidianBlack
+            Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown,
+            WrapContents = false, BackColor = Theme.ObsidianBlack
         };
         layout.Controls.Add(navegacion, 0, 1);
         navegacion.Controls.Add(CrearBoton("Dashboard", PaginaApp.Dashboard));
@@ -80,35 +68,20 @@ public class BaseFormSidebar : BaseForm
 
         var cerrarSesion = new Button
         {
-            Text = "Cerrar sesión",
-            Dock = DockStyle.Fill,
-            Margin = Padding.Empty,
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Theme.Surface,
-            ForeColor = Theme.TextPrimary,
-            Font = Theme.BodyFont,
-            Cursor = Cursors.Hand
+            Text = "Cerrar sesión", Dock = DockStyle.Fill, Margin = Padding.Empty,
+            FlatStyle = FlatStyle.Flat, BackColor = Theme.Surface,
+            ForeColor = Theme.TextPrimary, Font = Theme.BodyFont, Cursor = Cursors.Hand
         };
         cerrarSesion.FlatAppearance.BorderColor = Theme.BlazeOrange;
         cerrarSesion.FlatAppearance.BorderSize = 1;
-        cerrarSesion.Click += (_, _) =>
-        {
-            DialogResult = DialogResult.Retry;
-            Close();
-        };
+        cerrarSesion.Click += (_, _) => { DialogResult = DialogResult.Retry; Close(); };
         layout.Controls.Add(cerrarSesion, 0, 2);
 
-        pageRoot.Dock = DockStyle.Fill;
-        pageRoot.BackColor = Theme.DeepCharcoal;
+        var pageRoot = new Panel { Dock = DockStyle.Fill, BackColor = Theme.DeepCharcoal };
         PageContent.Dock = DockStyle.Fill;
         PageContent.BackColor = Theme.DeepCharcoal;
         PageContent.Padding = new Padding(34, 14, 34, 28);
         pageRoot.Controls.Add(PageContent);
-        pageHeader.Dock = DockStyle.Top;
-        pageHeader.Height = 106;
-        pageHeader.BackColor = Theme.DeepCharcoal;
-        pageHeader.Padding = new Padding(34, 26, 34, 0);
-        pageRoot.Controls.Add(pageHeader);
         Controls.Add(pageRoot);
         Controls.Add(sidebar);
     }
@@ -116,55 +89,18 @@ public class BaseFormSidebar : BaseForm
     private Button CrearBoton(string texto, PaginaApp destino)
     {
         var boton = new Button { Text = texto, Width = 207, Height = 48, Margin = new Padding(0, 0, 0, 8) };
-        Theme.StyleNavigationButton(boton, destino == paginaActiva);
+        Theme.StyleNavigationButton(boton, false);
         boton.Click += (_, _) => Navegar(destino);
+        botones.Add(destino, boton);
         return boton;
     }
 
-    protected Label AddPageTitle(string titulo, string? subtitulo = null)
+    protected void Navegar(PaginaApp destino)
     {
-        var title = new Label
-        {
-            Text = titulo,
-            Location = new Point(34, 22),
-            Size = new Size(760, 44),
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-            ForeColor = Theme.TextPrimary,
-            Font = Theme.HeadingFont,
-            TextAlign = ContentAlignment.MiddleLeft
-        };
-        pageHeader.Controls.Add(title);
-        if (!string.IsNullOrWhiteSpace(subtitulo))
-        {
-            pageHeader.Controls.Add(new Label
-            {
-                Text = subtitulo,
-                Location = new Point(36, 67),
-                Size = new Size(760, 27),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                ForeColor = Theme.TextSecondary,
-                Font = Theme.BodyFont,
-                TextAlign = ContentAlignment.MiddleLeft
-            });
-        }
-        return title;
-    }
-
-    protected DataGridView AddEmptyGrid()
-    {
-        var grid = new DataGridView { Dock = DockStyle.Fill, Name = "gridContenido" };
-        Theme.StyleGrid(grid);
-        PageContent.Controls.Add(grid);
-        grid.BringToFront();
-        return grid;
-    }
-
-    private void Navegar(PaginaApp destino)
-    {
-        if (destino == paginaActiva)
+        if (paginaActiva == destino)
             return;
 
-        BaseFormSidebar siguiente = destino switch
+        UserControl siguiente = destino switch
         {
             PaginaApp.Dashboard => new FrmDashboard(usuarioActual),
             PaginaApp.Productos => new FrmProductos(usuarioActual),
@@ -173,25 +109,72 @@ public class BaseFormSidebar : BaseForm
             _ => throw new ArgumentOutOfRangeException(nameof(destino))
         };
 
-        using (siguiente)
+        foreach (var item in botones)
+            Theme.StyleNavigationButton(item.Value, item.Key == destino);
+
+        PageContent.SuspendLayout();
+        try
         {
-            Hide();
-            try
+            if (paginaActual is not null)
             {
-                if (siguiente.ShowDialog(this) == DialogResult.Retry)
-                {
-                    DialogResult = DialogResult.Retry;
-                    Close();
-                }
+                PageContent.Controls.Remove(paginaActual);
+                paginaActual.Dispose();
             }
-            finally
-            {
-                if (!IsDisposed && DialogResult != DialogResult.Retry)
-                {
-                    Show();
-                    Activate();
-                }
-            }
+            PageContent.Controls.Clear();
+            paginaActual = siguiente;
+            paginaActiva = destino;
+            siguiente.Dock = DockStyle.Fill;
+            PageContent.Controls.Add(siguiente);
         }
+        catch
+        {
+            siguiente.Dispose();
+            throw;
+        }
+        finally { PageContent.ResumeLayout(true); }
+    }
+}
+
+/// <summary>Base de las secciones embebidas en PageContent.</summary>
+public class BasePage : UserControl
+{
+    private readonly Panel header = new();
+    protected Panel PageContent { get; } = new();
+
+    public BasePage()
+    {
+        BackColor = Theme.DeepCharcoal;
+        header.Dock = DockStyle.Top;
+        header.Height = 64;
+        header.BackColor = Theme.DeepCharcoal;
+        Controls.Add(PageContent);
+        PageContent.Dock = DockStyle.Fill;
+        PageContent.BackColor = Theme.DeepCharcoal;
+        Controls.Add(header);
+    }
+
+    protected void AddPageTitle(string titulo, string? subtitulo = null)
+    {
+        if (!string.IsNullOrWhiteSpace(subtitulo))
+            header.Controls.Add(new Label
+            {
+                Text = subtitulo, Dock = DockStyle.Top, Height = 24,
+                ForeColor = Theme.TextSecondary, Font = Theme.BodyFont,
+                TextAlign = ContentAlignment.MiddleLeft
+            });
+        header.Controls.Add(new Label
+        {
+            Text = titulo, Dock = DockStyle.Top, Height = 38,
+            ForeColor = Theme.TextPrimary, Font = Theme.HeadingFont,
+            TextAlign = ContentAlignment.MiddleLeft
+        });
+    }
+
+    protected DataGridView AddEmptyGrid()
+    {
+        var grid = new DataGridView { Dock = DockStyle.Fill, Name = "gridContenido" };
+        Theme.StyleGrid(grid);
+        PageContent.Controls.Add(grid);
+        return grid;
     }
 }

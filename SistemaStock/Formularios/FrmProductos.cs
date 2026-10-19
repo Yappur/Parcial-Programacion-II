@@ -6,7 +6,7 @@ using SistemaStock.Modelos.Usuarios;
 
 namespace SistemaStock.Formularios;
 
-public partial class FrmProductos : BaseFormSidebar
+public partial class FrmProductos : BasePage
 {
     private readonly ProductoRepositorio repositorio = new();
     private readonly CategoriaRepositorio categoriasRepositorio = new();
@@ -16,7 +16,7 @@ public partial class FrmProductos : BaseFormSidebar
 
     public FrmProductos() : this(null) { }
 
-    public FrmProductos(User? user) : base(PaginaApp.Productos, user)
+    public FrmProductos(User? user)
     {
         InitializeComponent();
         Text = "Chachín | Productos";

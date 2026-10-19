@@ -232,7 +232,7 @@ namespace SistemaStock.Formularios
                 }
 
                 Hide();
-                using FrmDashboard home = new(user);
+                using FrmPrincipal home = new(user);
                 DialogResult result = home.ShowDialog(this);
                 if (result == DialogResult.Retry)
                 {

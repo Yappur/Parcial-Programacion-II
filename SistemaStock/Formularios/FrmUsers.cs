@@ -6,7 +6,7 @@ using SistemaStock.Modelos.Usuarios;
 
 namespace SistemaStock.Formularios
 {
-    public sealed class FrmUsers : BaseFormSidebar
+    public sealed class FrmUsers : BasePage
     {
         private readonly User? currentUser;
         private readonly UserRepository repository = new();
@@ -15,7 +15,7 @@ namespace SistemaStock.Formularios
 
         public FrmUsers() : this(null) { }
 
-        public FrmUsers(User? user) : base(PaginaApp.Usuarios, user)
+        public FrmUsers(User? user)
         {
             currentUser = user;
             Theme.StyleGrid(grid);
