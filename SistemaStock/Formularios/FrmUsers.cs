@@ -6,7 +6,7 @@ using SistemaStock.Modelos.Usuarios;
 
 namespace SistemaStock.Formularios
 {
-    public sealed class FrmUsers : BaseFormSidebar
+    public sealed class FrmUsers : BasePage
     {
         private readonly User? currentUser;
         private readonly UserRepository repository = new();
@@ -15,19 +15,26 @@ namespace SistemaStock.Formularios
 
         public FrmUsers() : this(null) { }
 
-        public FrmUsers(User? user) : base(PaginaApp.Usuarios, user)
+        public FrmUsers(User? user)
         {
             currentUser = user;
             Theme.StyleGrid(grid);
             AddPageTitle("Usuarios", "Administración de usuarios del sistema");
-            var top = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 48, Padding = new Padding(0, 8, 0, 8), BackColor = Theme.DeepCharcoal };
+            var top = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 92,
+                Padding = new Padding(0, 8, 0, 8),
+                BackColor = Theme.DeepCharcoal,
+                WrapContents = true
+            };
             if (user is not null)
                 top.Controls.Add(new Label { Text = $"Sesión: {user.FullName} | Rol: {user.Role}", AutoSize = true, Padding = new Padding(0, 8, 12, 0), ForeColor = Theme.TextSecondary });
             if (user is not null && UserPermissions.CanManageUsers(user))
             {
-                var add = new Button { Text = "Crear usuario" }; add.Click += (_, _) => CreateUser(); top.Controls.Add(add);
-                var edit = new Button { Text = "Modificar / contraseña" }; edit.Click += (_, _) => EditUser(); top.Controls.Add(edit);
-                var deactivate = new Button { Text = "Desactivar" }; deactivate.Click += (_, _) => DeactivateUser(); top.Controls.Add(deactivate);
+                var add = new Button { Text = "Crear usuario", AutoSize = true }; add.Click += (_, _) => CreateUser(); top.Controls.Add(add);
+                var edit = new Button { Text = "Modificar / contraseña", AutoSize = true }; edit.Click += (_, _) => EditUser(); top.Controls.Add(edit);
+                var deactivate = new Button { Text = "Desactivar", AutoSize = true }; deactivate.Click += (_, _) => DeactivateUser(); top.Controls.Add(deactivate);
                 top.Controls.Add(search); search.TextChanged += (_, _) => RefreshUsers();
             }
             else
@@ -72,10 +79,10 @@ namespace SistemaStock.Formularios
 
     internal sealed class UserEditForm : Form
     {
-        private readonly TextBox usernameBox = new() { Width = 260 };
-        private readonly TextBox fullNameBox = new() { Width = 260 };
-        private readonly TextBox passwordBox = new() { Width = 260, UseSystemPasswordChar = true };
-        private readonly ComboBox roleBox = new() { Width = 260, DropDownStyle = ComboBoxStyle.DropDownList };
+        private readonly TextBox usernameBox = new() { Width = 280 };
+        private readonly TextBox fullNameBox = new() { Width = 280 };
+        private readonly TextBox passwordBox = new() { Width = 280, UseSystemPasswordChar = true };
+        private readonly ComboBox roleBox = new() { Width = 280, DropDownStyle = ComboBoxStyle.DropDownList };
         private readonly CheckBox activeBox = new() { Text = "Cuenta activa", Checked = true, AutoSize = true };
         private readonly bool isNew;
         public string Username => usernameBox.Text.Trim();
@@ -86,17 +93,66 @@ namespace SistemaStock.Formularios
         public UserEditForm(User? user = null)
         {
             isNew = user is null;
-            Text = isNew ? "Chachín | Crear usuario" : "Chachín | Modificar usuario"; Width = 380; Height = user is null ? 320 : 360; StartPosition = FormStartPosition.CenterParent;
+            Text = isNew ? "Chachín | Crear usuario" : "Chachín | Modificar usuario";
+            StartPosition = FormStartPosition.CenterParent;
+            ClientSize = new System.Drawing.Size(390, 380);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            MinimumSize = Size.Empty;
+            MaximumSize = Size.Empty;
+            BackColor = Theme.DeepCharcoal;
+            ForeColor = Theme.TextPrimary;
+            Font = Theme.BodyFont;
             roleBox.Items.AddRange(new object[] { "Administrador", "Supervisor", "Vendedor" });
-            var panel = new FlowLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(18), FlowDirection = FlowDirection.TopDown, WrapContents = false };
-            panel.Controls.Add(new Label { Text = "Nombre de usuario", AutoSize = true }); panel.Controls.Add(usernameBox);
-            panel.Controls.Add(new Label { Text = "Nombre completo", AutoSize = true }); panel.Controls.Add(fullNameBox);
-            panel.Controls.Add(new Label { Text = user is null ? "Contraseña" : "Nueva contraseña (vacío = sin cambios)", AutoSize = true }); panel.Controls.Add(passwordBox);
-            panel.Controls.Add(new Label { Text = "Rol", AutoSize = true }); panel.Controls.Add(roleBox);
-            if (user is not null) panel.Controls.Add(activeBox);
-            var save = new Button { Text = "Guardar", Width = 260, Height = 34 }; save.Click += Save; panel.Controls.Add(save); Controls.Add(panel);
+            var panel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(28, 20, 28, 20),
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true,
+                BackColor = Theme.DeepCharcoal
+            };
+            AgregarCampo(panel, "Nombre de usuario", usernameBox);
+            AgregarCampo(panel, "Nombre completo", fullNameBox);
+            AgregarCampo(panel, user is null ? "Contraseña" : "Nueva contraseña (vacío = sin cambios)", passwordBox);
+            AgregarCampo(panel, "Rol", roleBox);
+            if (user is not null)
+            {
+                activeBox.ForeColor = Theme.TextPrimary;
+                activeBox.Margin = new Padding(0, 3, 0, 10);
+                panel.Controls.Add(activeBox);
+            }
+            var save = new Button { Text = "Guardar", Width = 280, Height = 38 };
+            save.BackColor = Theme.BlazeOrange;
+            save.ForeColor = Theme.TextPrimary;
+            save.FlatStyle = FlatStyle.Flat;
+            save.FlatAppearance.BorderSize = 0;
+            save.Click += Save;
+            panel.Controls.Add(save);
+            Controls.Add(panel);
             if (user is not null) { usernameBox.Text = user.Username; fullNameBox.Text = user.FullName; roleBox.SelectedItem = user.Role; activeBox.Checked = user.IsActive; }
             else roleBox.SelectedItem = "Vendedor";
+        }
+
+        private static void AgregarCampo(FlowLayoutPanel panel, string texto, Control control)
+        {
+            panel.Controls.Add(new Label { Text = texto, AutoSize = true, ForeColor = Theme.TextPrimary });
+            if (control is TextBox textBox)
+            {
+                textBox.BackColor = Theme.ObsidianBlack;
+                textBox.ForeColor = Theme.TextPrimary;
+                textBox.BorderStyle = BorderStyle.FixedSingle;
+            }
+            else if (control is ComboBox comboBox)
+            {
+                comboBox.BackColor = Theme.ObsidianBlack;
+                comboBox.ForeColor = Theme.TextPrimary;
+                comboBox.FlatStyle = FlatStyle.Flat;
+            }
+            control.Margin = new Padding(0, 3, 0, 10);
+            panel.Controls.Add(control);
         }
 
         private void Save(object? sender, EventArgs e)

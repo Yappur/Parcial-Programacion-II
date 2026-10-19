@@ -17,6 +17,8 @@ public static class Theme
 
     public static readonly Font BodyFont = new("Segoe UI", 10F, FontStyle.Regular);
     public static readonly Font HeadingFont = new("Segoe UI", 22F, FontStyle.Bold);
+    private static readonly Font NavigationFont = new("Segoe UI", 10F, FontStyle.Regular);
+    private static readonly Font ActiveNavigationFont = new("Segoe UI", 10F, FontStyle.Bold);
 
     public static void ApplyForm(Form form)
     {
@@ -33,7 +35,7 @@ public static class Theme
         button.FlatAppearance.BorderSize = 0;
         button.BackColor = active ? BlazeOrange : ObsidianBlack;
         button.ForeColor = TextPrimary;
-        button.Font = new Font("Segoe UI", 10F, active ? FontStyle.Bold : FontStyle.Regular);
+        button.Font = active ? ActiveNavigationFont : NavigationFont;
         button.TextAlign = ContentAlignment.MiddleLeft;
         button.Padding = new Padding(20, 0, 8, 0);
         button.Cursor = Cursors.Hand;
