@@ -35,7 +35,8 @@ namespace SistemaStock.Formularios
             MaximumSize = Size.Empty;
             ClientSize = new Size(1000, 620);
             BackColor = fondo;
-            BackgroundImage = null;
+            BackgroundImage = SistemaStock.Properties.Resources.BarChachinLuzAmbar;
+            BackgroundImageLayout = ImageLayout.Stretch;
 
             label1.Visible = false;
             label2.Visible = false;
@@ -82,17 +83,6 @@ namespace SistemaStock.Formularios
                 Size = new Size(90, 4)
             };
             panelMarca.Controls.Add(linea);
-
-            Label lblDescripcion = new()
-            {
-                Text = "Administrá tu negocio de forma simple.",
-                ForeColor = Color.Silver,
-                Font = new Font("Segoe UI", 11),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Location = new Point(25, 475),
-                Size = new Size(420, 35)
-            };
-            panelMarca.Controls.Add(lblDescripcion);
 
             Panel panelLogin = new()
             {
