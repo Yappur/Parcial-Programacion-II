@@ -45,6 +45,18 @@ public partial class FrmProductos : BasePage
             var deactivate = new Button { Text = "Desactivar", AutoSize = true };
             deactivate.Click += (_, _) => DesactivarProducto();
             top.Controls.Add(deactivate);
+
+            var activate = new Button { Text = "Reactivar", AutoSize = true };
+            activate.Click += (_, _) => ReactivarProducto();
+            top.Controls.Add(activate);
+
+            var delete = new Button { Text = "Eliminar", AutoSize = true };
+            delete.Click += (_, _) => EliminarProducto();
+            top.Controls.Add(delete);
+
+            var manageCategories = new Button { Text = "Administrar categorías", AutoSize = true };
+            manageCategories.Click += (_, _) => AdministrarCategorias();
+            top.Controls.Add(manageCategories);
             top.Controls.Add(busqueda);
             top.Controls.Add(filtroCategoria);
             CargarCategorias();
@@ -98,6 +110,7 @@ public partial class FrmProductos : BasePage
         if (grid.Columns[nameof(Producto.Stock)] is { } stock) stock.HeaderText = "Stock";
         if (grid.Columns[nameof(Producto.CategoriaNombre)] is { } categoria) categoria.HeaderText = "Categoría";
         if (grid.Columns[nameof(Producto.Activo)] is { } activo) activo.HeaderText = "Activo";
+        if (grid.Columns[nameof(Producto.Activo)] is { } activoCheckbox) activoCheckbox.ReadOnly = true;
         if (grid.Columns[nameof(Producto.CategoriaId)] is { } categoriaId) categoriaId.Visible = false;
     }
 
@@ -152,6 +165,49 @@ public partial class FrmProductos : BasePage
         {
             MessageBox.Show("No se pudo desactivar el producto.\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+
+    private void ReactivarProducto()
+    {
+        var producto = ProductoSeleccionado();
+        if (producto is null) { MessageBox.Show("Seleccioná un producto."); return; }
+        if (producto.Activo) { MessageBox.Show("El producto ya está activo."); return; }
+        if (MessageBox.Show($"¿Reactivar {producto.Nombre}?", "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+        try
+        {
+            repositorio.Activate(producto.Codigo);
+            ActualizarListado();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("No se pudo reactivar el producto.\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void EliminarProducto()
+    {
+        var producto = ProductoSeleccionado();
+        if (producto is null) { MessageBox.Show("Seleccioná un producto."); return; }
+        if (MessageBox.Show($"¿Eliminar definitivamente {producto.Nombre}? Esta acción no se puede deshacer.",
+            "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+        try
+        {
+            repositorio.Delete(producto.Codigo);
+            ActualizarListado();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("No se pudo eliminar el producto. Puede estar asociado a una venta.\n" + ex.Message,
+                "Error al eliminar", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void AdministrarCategorias()
+    {
+        using var form = new FrmCategorias(categoriasRepositorio);
+        form.ShowDialog(this.FindForm());
+        CargarCategorias();
+        ActualizarListado();
     }
 }
 

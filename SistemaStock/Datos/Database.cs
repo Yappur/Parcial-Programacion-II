@@ -68,6 +68,32 @@ internal static class Database
             """, connection);
         productCommand.ExecuteNonQuery();
 
+        using var salesCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS ventas (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                fecha_hora DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                id_usuario INT NOT NULL,
+                total DECIMAL(10,2) NOT NULL CHECK (total >= 0),
+                CONSTRAINT fk_ventas_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
+            ) ENGINE=InnoDB;
+            """, connection);
+        salesCommand.ExecuteNonQuery();
+
+        using var saleDetailsCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS detalle_venta (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                id_venta INT NOT NULL,
+                codigo_producto INT NOT NULL,
+                nombre_producto VARCHAR(100) NOT NULL,
+                cantidad INT NOT NULL CHECK (cantidad > 0),
+                precio_unitario DECIMAL(10,2) NOT NULL CHECK (precio_unitario >= 0),
+                subtotal DECIMAL(10,2) NOT NULL CHECK (subtotal >= 0),
+                CONSTRAINT fk_detalle_venta_ventas FOREIGN KEY (id_venta) REFERENCES ventas(id) ON DELETE CASCADE,
+                CONSTRAINT fk_detalle_venta_productos FOREIGN KEY (codigo_producto) REFERENCES productos(codigo)
+            ) ENGINE=InnoDB;
+            """, connection);
+        saleDetailsCommand.ExecuteNonQuery();
+
         using var seedCommand = new MySqlCommand("""
             INSERT INTO categorias (nombre) VALUES ('Bebidas'), ('Platos'), ('Postres')
             ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);

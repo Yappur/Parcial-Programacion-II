@@ -35,6 +35,7 @@ namespace SistemaStock.Formularios
                 var add = new Button { Text = "Crear usuario", AutoSize = true }; add.Click += (_, _) => CreateUser(); top.Controls.Add(add);
                 var edit = new Button { Text = "Modificar / contraseña", AutoSize = true }; edit.Click += (_, _) => EditUser(); top.Controls.Add(edit);
                 var deactivate = new Button { Text = "Desactivar", AutoSize = true }; deactivate.Click += (_, _) => DeactivateUser(); top.Controls.Add(deactivate);
+                var delete = new Button { Text = "Eliminar usuario", AutoSize = true }; delete.Click += (_, _) => DeleteUser(); top.Controls.Add(delete);
                 top.Controls.Add(search); search.TextChanged += (_, _) => RefreshUsers();
             }
             else
@@ -74,6 +75,29 @@ namespace SistemaStock.Formularios
             if (currentUser is not null && user.Id == currentUser.Id) { MessageBox.Show("No podés desactivar tu propia cuenta mientras estás usando el sistema."); return; }
             if (MessageBox.Show($"¿Desactivar a {user.Username}?", "Confirmar", MessageBoxButtons.YesNo) == DialogResult.Yes)
             { repository.Deactivate(user.Id); RefreshUsers(); }
+        }
+
+        private void DeleteUser()
+        {
+            var user = SelectedUser(); if (user is null) { MessageBox.Show("Seleccioná un usuario."); return; }
+            if (currentUser is not null && user.Id == currentUser.Id)
+            {
+                MessageBox.Show("No podés eliminar tu propia cuenta mientras estás usando el sistema.");
+                return;
+            }
+            if (MessageBox.Show($"¿Eliminar definitivamente al usuario {user.Username}? Esta acción no se puede deshacer.",
+                "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                return;
+            try
+            {
+                repository.Delete(user.Id);
+                RefreshUsers();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("No se pudo eliminar el usuario. Puede estar asociado a registros del sistema.\n" + ex.Message,
+                    "Error al eliminar", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 

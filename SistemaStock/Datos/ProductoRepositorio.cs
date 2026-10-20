@@ -48,6 +48,22 @@ internal sealed class ProductoRepositorio
         cmd.ExecuteNonQuery();
     }
 
+    public void Activate(int codigo)
+    {
+        using var db = Database.OpenConnection();
+        using var cmd = new MySqlCommand("UPDATE productos SET activo=TRUE WHERE codigo=@codigo", db);
+        cmd.Parameters.AddWithValue("@codigo", codigo);
+        cmd.ExecuteNonQuery();
+    }
+
+    public void Delete(int codigo)
+    {
+        using var db = Database.OpenConnection();
+        using var cmd = new MySqlCommand("DELETE FROM productos WHERE codigo=@codigo", db);
+        cmd.Parameters.AddWithValue("@codigo", codigo);
+        cmd.ExecuteNonQuery();
+    }
+
     private static void AgregarParametros(MySqlCommand cmd, Producto producto)
     {
         cmd.Parameters.AddWithValue("@nombre", producto.Nombre.Trim());

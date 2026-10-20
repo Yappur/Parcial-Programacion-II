@@ -70,6 +70,14 @@ internal sealed class UserRepository
         cmd.ExecuteNonQuery();
     }
 
+    public void Delete(int id)
+    {
+        using var db = Database.OpenConnection();
+        using var cmd = new MySqlCommand("DELETE FROM usuarios WHERE id=@id", db);
+        cmd.Parameters.AddWithValue("@id", id);
+        cmd.ExecuteNonQuery();
+    }
+
     private static User ReadUser(MySqlDataReader reader) => new()
     {
         Id = reader.GetInt32("id"), Username = reader.GetString("nombre_usuario"),
