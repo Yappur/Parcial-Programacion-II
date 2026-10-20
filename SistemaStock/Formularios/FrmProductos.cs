@@ -21,6 +21,17 @@ public partial class FrmProductos : BasePage
         InitializeComponent();
         Text = "Chachín | Productos";
         Theme.StyleGrid(grid);
+        grid.CellFormatting += (_, e) =>
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0 &&
+                grid.Columns[e.ColumnIndex].DataPropertyName == nameof(Producto.EstadoStock) &&
+                grid.Rows[e.RowIndex].DataBoundItem is Producto producto &&
+                producto.Stock <= Producto.UmbralStockBajo)
+            {
+                e.CellStyle.ForeColor = Theme.BlazeOrange;
+                e.CellStyle.Font = new Font(Theme.BodyFont, FontStyle.Bold);
+            }
+        };
         AddPageTitle("Productos", "Administración de productos del sistema");
 
         var top = new FlowLayoutPanel
@@ -45,6 +56,13 @@ public partial class FrmProductos : BasePage
             var deactivate = new Button { Text = "Desactivar", AutoSize = true };
             deactivate.Click += (_, _) => DesactivarProducto();
             top.Controls.Add(deactivate);
+            top.Controls.Add(new Label
+            {
+                Text = $"Stock bajo: {Producto.UmbralStockBajo} unidades o menos",
+                AutoSize = true,
+                Padding = new Padding(8),
+                ForeColor = Theme.BlazeOrange
+            });
             top.Controls.Add(busqueda);
             top.Controls.Add(filtroCategoria);
             CargarCategorias();
@@ -96,6 +114,7 @@ public partial class FrmProductos : BasePage
             precio.DefaultCellStyle.Format = "C2";
         }
         if (grid.Columns[nameof(Producto.Stock)] is { } stock) stock.HeaderText = "Stock";
+        if (grid.Columns[nameof(Producto.EstadoStock)] is { } estadoStock) estadoStock.HeaderText = "Estado del stock";
         if (grid.Columns[nameof(Producto.CategoriaNombre)] is { } categoria) categoria.HeaderText = "Categoría";
         if (grid.Columns[nameof(Producto.Activo)] is { } activo) activo.HeaderText = "Activo";
         if (grid.Columns[nameof(Producto.CategoriaId)] is { } categoriaId) categoriaId.Visible = false;

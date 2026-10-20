@@ -2,6 +2,8 @@ namespace SistemaStock.Modelos;
 
 public sealed class Producto
 {
+    public const int UmbralStockBajo = 5;
+
     public int Codigo { get; set; }
     public string Nombre { get; set; } = "";
     public decimal Precio { get; set; }
@@ -9,4 +11,5 @@ public sealed class Producto
     public bool Activo { get; set; }
     public int CategoriaId { get; set; }
     public string CategoriaNombre { get; set; } = "";
+    public string EstadoStock => Stock <= UmbralStockBajo ? "Stock bajo" : "Disponible";
 }

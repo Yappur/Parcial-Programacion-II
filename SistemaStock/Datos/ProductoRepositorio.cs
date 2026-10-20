@@ -48,6 +48,47 @@ internal sealed class ProductoRepositorio
         cmd.ExecuteNonQuery();
     }
 
+    public List<Producto> GetActivos()
+    {
+        using var db = Database.OpenConnection();
+        using var cmd = new MySqlCommand("""
+            SELECT p.codigo, p.nombre, p.precio, p.stock, p.activo, p.categoria_id, c.nombre AS categoria_nombre
+            FROM productos p
+            INNER JOIN categorias c ON c.id = p.categoria_id
+            WHERE p.activo = TRUE
+            ORDER BY p.nombre
+            """, db);
+        using var reader = cmd.ExecuteReader();
+        var productos = new List<Producto>();
+        while (reader.Read()) productos.Add(LeerProducto(reader));
+        return productos;
+    }
+
+    public void RegistrarVenta(int codigo, int cantidad)
+    {
+        if (cantidad <= 0) throw new ArgumentOutOfRangeException(nameof(cantidad), "La cantidad debe ser mayor que cero.");
+
+        using var db = Database.OpenConnection();
+        using var transaction = db.BeginTransaction();
+        using var consulta = new MySqlCommand(
+            "SELECT stock FROM productos WHERE codigo=@codigo AND activo=TRUE FOR UPDATE", db, transaction);
+        consulta.Parameters.AddWithValue("@codigo", codigo);
+        var resultado = consulta.ExecuteScalar();
+        if (resultado is null)
+            throw new InvalidOperationException("El producto no existe o está desactivado.");
+
+        var stockActual = Convert.ToInt32(resultado);
+        if (cantidad > stockActual)
+            throw new InvalidOperationException($"Stock insuficiente. Hay {stockActual} unidad(es) disponible(s).");
+
+        using var actualizar = new MySqlCommand(
+            "UPDATE productos SET stock=@stock WHERE codigo=@codigo", db, transaction);
+        actualizar.Parameters.AddWithValue("@stock", stockActual - cantidad);
+        actualizar.Parameters.AddWithValue("@codigo", codigo);
+        actualizar.ExecuteNonQuery();
+        transaction.Commit();
+    }
+
     private static void AgregarParametros(MySqlCommand cmd, Producto producto)
     {
         cmd.Parameters.AddWithValue("@nombre", producto.Nombre.Trim());

@@ -145,7 +145,8 @@ public class BasePage : UserControl
     {
         BackColor = Theme.DeepCharcoal;
         header.Dock = DockStyle.Top;
-        header.Height = 64;
+        header.Height = 88;
+        header.Padding = new Padding(0, 4, 0, 2);
         header.BackColor = Theme.DeepCharcoal;
         Controls.Add(PageContent);
         PageContent.Dock = DockStyle.Fill;
@@ -158,13 +159,13 @@ public class BasePage : UserControl
         if (!string.IsNullOrWhiteSpace(subtitulo))
             header.Controls.Add(new Label
             {
-                Text = subtitulo, Dock = DockStyle.Top, Height = 24,
+                Text = subtitulo, Dock = DockStyle.Top, Height = 28,
                 ForeColor = Theme.TextSecondary, Font = Theme.BodyFont,
                 TextAlign = ContentAlignment.MiddleLeft
             });
         header.Controls.Add(new Label
         {
-            Text = titulo, Dock = DockStyle.Top, Height = 38,
+            Text = titulo, Dock = DockStyle.Top, Height = 52,
             ForeColor = Theme.TextPrimary, Font = Theme.HeadingFont,
             TextAlign = ContentAlignment.MiddleLeft
         });
