@@ -55,6 +55,28 @@ internal static class Database
             """, connection);
         categoryCommand.ExecuteNonQuery();
 
+        using var tableCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS mesas (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                numero INT NOT NULL UNIQUE,
+                capacidad INT NULL,
+                activo BOOLEAN NOT NULL DEFAULT TRUE
+            ) ENGINE=InnoDB;
+            """, connection);
+        tableCommand.ExecuteNonQuery();
+
+        using var ingredientCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS ingredientes (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                nombre VARCHAR(100) NOT NULL UNIQUE,
+                unidad ENUM('un','g','ml') NOT NULL,
+                stock DECIMAL(10,3) NOT NULL DEFAULT 0 CHECK (stock >= 0),
+                stock_minimo DECIMAL(10,3) NOT NULL DEFAULT 0 CHECK (stock_minimo >= 0),
+                activo BOOLEAN NOT NULL DEFAULT TRUE
+            ) ENGINE=InnoDB;
+            """, connection);
+        ingredientCommand.ExecuteNonQuery();
+
         using var productCommand = new MySqlCommand("""
             CREATE TABLE IF NOT EXISTS productos (
                 codigo INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
