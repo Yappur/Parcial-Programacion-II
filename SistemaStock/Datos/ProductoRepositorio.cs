@@ -9,7 +9,7 @@ internal sealed class ProductoRepositorio
     {
         using var db = Database.OpenConnection();
         using var cmd = new MySqlCommand("""
-            SELECT p.codigo, p.nombre, p.precio, p.stock, p.activo, p.categoria_id, c.nombre AS categoria_nombre
+            SELECT p.codigo, p.nombre, p.precio, p.tipo_stock, p.stock, p.stock_minimo, p.activo, p.categoria_id, c.nombre AS categoria_nombre
             FROM productos p
             INNER JOIN categorias c ON c.id = p.categoria_id
             WHERE p.nombre LIKE @busqueda AND (@categoriaId IS NULL OR p.categoria_id = @categoriaId)
@@ -25,16 +25,18 @@ internal sealed class ProductoRepositorio
 
     public void Create(Producto producto)
     {
+        ValidarStock(producto);
         using var db = Database.OpenConnection();
-        using var cmd = new MySqlCommand("INSERT INTO productos(nombre, precio, stock, categoria_id) VALUES(@nombre, @precio, @stock, @categoriaId)", db);
+        using var cmd = new MySqlCommand("INSERT INTO productos(nombre, precio, categoria_id, tipo_stock, stock, stock_minimo, activo) VALUES(@nombre, @precio, @categoriaId, @tipoStock, @stock, @stockMinimo, @activo)", db);
         AgregarParametros(cmd, producto);
         cmd.ExecuteNonQuery();
     }
 
     public void Update(Producto producto)
     {
+        ValidarStock(producto);
         using var db = Database.OpenConnection();
-        using var cmd = new MySqlCommand("UPDATE productos SET nombre=@nombre, precio=@precio, stock=@stock, categoria_id=@categoriaId WHERE codigo=@codigo", db);
+        using var cmd = new MySqlCommand("UPDATE productos SET nombre=@nombre, precio=@precio, categoria_id=@categoriaId, tipo_stock=@tipoStock, stock=@stock, stock_minimo=@stockMinimo, activo=@activo WHERE codigo=@codigo", db);
         AgregarParametros(cmd, producto);
         cmd.Parameters.AddWithValue("@codigo", producto.Codigo);
         cmd.ExecuteNonQuery();
@@ -52,14 +54,39 @@ internal sealed class ProductoRepositorio
     {
         cmd.Parameters.AddWithValue("@nombre", producto.Nombre.Trim());
         cmd.Parameters.AddWithValue("@precio", producto.Precio);
-        cmd.Parameters.AddWithValue("@stock", producto.Stock);
+        cmd.Parameters.AddWithValue("@tipoStock", TipoStockMySql.ToDatabase(producto.TipoStock));
+        object stock = producto.TipoStock == TipoStock.Directo ? producto.Stock!.Value : DBNull.Value;
+        object stockMinimo = producto.TipoStock == TipoStock.Directo ? producto.StockMinimo!.Value : DBNull.Value;
+        cmd.Parameters.AddWithValue("@stock", stock);
+        cmd.Parameters.AddWithValue("@stockMinimo", stockMinimo);
         cmd.Parameters.AddWithValue("@categoriaId", producto.CategoriaId);
+        cmd.Parameters.AddWithValue("@activo", producto.Activo);
+    }
+
+    private static void ValidarStock(Producto producto)
+    {
+        if (producto.TipoStock == TipoStock.Directo)
+        {
+            if (producto.Stock is null or < 0 || producto.StockMinimo is null or < 0)
+                throw new ArgumentException("Los productos DIRECTO requieren stock y stock mínimo enteros mayores o iguales a cero.");
+        }
+        else if (producto.TipoStock == TipoStock.PorReceta)
+        {
+            producto.Stock = null;
+            producto.StockMinimo = null;
+        }
+        else
+        {
+            throw new ArgumentOutOfRangeException(nameof(producto), "El tipo de stock no es válido.");
+        }
     }
 
     private static Producto LeerProducto(MySqlDataReader reader) => new()
     {
         Codigo = reader.GetInt32("codigo"), Nombre = reader.GetString("nombre"),
-        Precio = reader.GetDecimal("precio"), Stock = reader.GetInt32("stock"),
+        Precio = reader.GetDecimal("precio"), TipoStock = TipoStockMySql.FromDatabase(reader.GetString("tipo_stock")),
+        Stock = reader.IsDBNull(reader.GetOrdinal("stock")) ? null : reader.GetInt32("stock"),
+        StockMinimo = reader.IsDBNull(reader.GetOrdinal("stock_minimo")) ? null : reader.GetInt32("stock_minimo"),
         Activo = reader.GetBoolean("activo"), CategoriaId = reader.GetInt32("categoria_id"),
         CategoriaNombre = reader.GetString("categoria_nombre")
     };

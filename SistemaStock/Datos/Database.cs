@@ -60,9 +60,11 @@ internal static class Database
                 codigo INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 nombre VARCHAR(100) NOT NULL,
                 precio DECIMAL(10,2) NOT NULL CHECK (precio >= 0),
-                stock INT NOT NULL CHECK (stock >= 0),
-                activo BOOLEAN NOT NULL DEFAULT TRUE,
                 categoria_id INT NOT NULL,
+                tipo_stock ENUM('DIRECTO','POR_RECETA') NOT NULL,
+                stock INT NULL CHECK (stock IS NULL OR stock >= 0),
+                stock_minimo INT NULL CHECK (stock_minimo IS NULL OR stock_minimo >= 0),
+                activo BOOLEAN NOT NULL DEFAULT TRUE,
                 CONSTRAINT fk_productos_categorias FOREIGN KEY (categoria_id) REFERENCES categorias(id)
             ) ENGINE=InnoDB;
             """, connection);

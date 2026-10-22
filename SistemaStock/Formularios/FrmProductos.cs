@@ -95,7 +95,9 @@ public partial class FrmProductos : BasePage
             precio.HeaderText = "Precio";
             precio.DefaultCellStyle.Format = "C2";
         }
+        if (grid.Columns[nameof(Producto.TipoStock)] is { } tipoStock) tipoStock.HeaderText = "Tipo de stock";
         if (grid.Columns[nameof(Producto.Stock)] is { } stock) stock.HeaderText = "Stock";
+        if (grid.Columns[nameof(Producto.StockMinimo)] is { } stockMinimo) stockMinimo.HeaderText = "Stock mínimo";
         if (grid.Columns[nameof(Producto.CategoriaNombre)] is { } categoria) categoria.HeaderText = "Categoría";
         if (grid.Columns[nameof(Producto.Activo)] is { } activo) activo.HeaderText = "Activo";
         if (grid.Columns[nameof(Producto.CategoriaId)] is { } categoriaId) categoriaId.Visible = false;
@@ -126,7 +128,9 @@ public partial class FrmProductos : BasePage
         {
             producto.Nombre = form.Producto.Nombre;
             producto.Precio = form.Producto.Precio;
+            producto.TipoStock = form.Producto.TipoStock;
             producto.Stock = form.Producto.Stock;
+            producto.StockMinimo = form.Producto.StockMinimo;
             producto.CategoriaId = form.Producto.CategoriaId;
             repositorio.Update(producto);
             ActualizarListado();
@@ -160,6 +164,8 @@ internal sealed class ProductoEditForm : BaseForm
     private readonly TextBox nombreBox = new() { Width = 280 };
     private readonly TextBox precioBox = new() { Width = 280 };
     private readonly TextBox stockBox = new() { Width = 280 };
+    private readonly TextBox stockMinimoBox = new() { Width = 280 };
+    private readonly ComboBox tipoStockBox = new() { Width = 280, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly ComboBox categoriaBox = new() { Width = 280, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Producto? productoOriginal;
 
@@ -172,7 +178,7 @@ internal sealed class ProductoEditForm : BaseForm
         StartPosition = FormStartPosition.CenterParent;
         WindowState = FormWindowState.Normal;
         MinimumSize = Size.Empty;
-        ClientSize = new Size(390, 380);
+        ClientSize = new Size(390, 470);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -180,6 +186,9 @@ internal sealed class ProductoEditForm : BaseForm
         categoriaBox.DisplayMember = nameof(Categoria.Nombre);
         categoriaBox.ValueMember = nameof(Categoria.Id);
         categoriaBox.DataSource = categorias;
+        tipoStockBox.Items.Add(TipoStockMySql.ToDatabase(TipoStock.Directo));
+        tipoStockBox.Items.Add(TipoStockMySql.ToDatabase(TipoStock.PorReceta));
+        tipoStockBox.SelectedIndexChanged += (_, _) => ActualizarCamposStock();
 
         var panel = new FlowLayoutPanel
         {
@@ -192,7 +201,9 @@ internal sealed class ProductoEditForm : BaseForm
         };
         AgregarCampo(panel, "Nombre", nombreBox);
         AgregarCampo(panel, "Precio", precioBox);
+        AgregarCampo(panel, "Tipo de stock", tipoStockBox);
         AgregarCampo(panel, "Stock", stockBox);
+        AgregarCampo(panel, "Stock mínimo", stockMinimoBox);
         AgregarCampo(panel, "Categoría", categoriaBox);
 
         var guardar = new Button { Text = "Guardar", Width = 280, Height = 38 };
@@ -208,10 +219,22 @@ internal sealed class ProductoEditForm : BaseForm
         {
             nombreBox.Text = producto.Nombre;
             precioBox.Text = producto.Precio.ToString(CultureInfo.CurrentCulture);
-            stockBox.Text = producto.Stock.ToString(CultureInfo.CurrentCulture);
+            tipoStockBox.SelectedItem = TipoStockMySql.ToDatabase(producto.TipoStock);
+            stockBox.Text = producto.Stock?.ToString(CultureInfo.CurrentCulture) ?? "";
+            stockMinimoBox.Text = producto.StockMinimo?.ToString(CultureInfo.CurrentCulture) ?? "";
             if (categorias.Any(categoria => categoria.Id == producto.CategoriaId))
                 categoriaBox.SelectedValue = producto.CategoriaId;
         }
+        else tipoStockBox.SelectedItem = TipoStockMySql.ToDatabase(TipoStock.Directo);
+        ActualizarCamposStock();
+    }
+
+    private void ActualizarCamposStock()
+    {
+        bool esDirecto = tipoStockBox.SelectedItem is string valor &&
+            TipoStockMySql.FromDatabase(valor) == TipoStock.Directo;
+        stockBox.Enabled = esDirecto;
+        stockMinimoBox.Enabled = esDirecto;
     }
 
     private static void AgregarCampo(FlowLayoutPanel panel, string texto, Control control)
@@ -241,11 +264,31 @@ internal sealed class ProductoEditForm : BaseForm
             precioBox.Focus();
             return;
         }
-        if (!int.TryParse(stockBox.Text.Trim(), NumberStyles.Integer, CultureInfo.CurrentCulture, out var stock) || stock < 0)
+        if (tipoStockBox.SelectedItem is not string tipoStockTexto)
         {
-            MessageBox.Show("Ingresá un stock entero válido mayor o igual a cero.");
-            stockBox.Focus();
+            MessageBox.Show("Elegí un tipo de stock.");
+            tipoStockBox.Focus();
             return;
+        }
+        var tipoStock = TipoStockMySql.FromDatabase(tipoStockTexto);
+        int? stock = null;
+        int? stockMinimo = null;
+        if (tipoStock == TipoStock.Directo)
+        {
+            if (!int.TryParse(stockBox.Text.Trim(), NumberStyles.Integer, CultureInfo.CurrentCulture, out var stockDirecto) || stockDirecto < 0)
+            {
+                MessageBox.Show("Ingresá un stock entero válido mayor o igual a cero.");
+                stockBox.Focus();
+                return;
+            }
+            if (!int.TryParse(stockMinimoBox.Text.Trim(), NumberStyles.Integer, CultureInfo.CurrentCulture, out var minimoDirecto) || minimoDirecto < 0)
+            {
+                MessageBox.Show("Ingresá un stock mínimo entero válido mayor o igual a cero.");
+                stockMinimoBox.Focus();
+                return;
+            }
+            stock = stockDirecto;
+            stockMinimo = minimoDirecto;
         }
         if (categoriaBox.SelectedItem is not Categoria categoria)
         {
@@ -257,7 +300,9 @@ internal sealed class ProductoEditForm : BaseForm
         Producto.Codigo = productoOriginal?.Codigo ?? 0;
         Producto.Nombre = nombreBox.Text.Trim();
         Producto.Precio = precio;
+        Producto.TipoStock = tipoStock;
         Producto.Stock = stock;
+        Producto.StockMinimo = stockMinimo;
         Producto.CategoriaId = categoria.Id;
         Producto.Activo = productoOriginal?.Activo ?? true;
         DialogResult = DialogResult.OK;
