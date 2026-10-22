@@ -96,8 +96,17 @@ public partial class FrmProductos : BasePage
             precio.DefaultCellStyle.Format = "C2";
         }
         if (grid.Columns[nameof(Producto.TipoStock)] is { } tipoStock) tipoStock.HeaderText = "Tipo de stock";
-        if (grid.Columns[nameof(Producto.Stock)] is { } stock) stock.HeaderText = "Stock";
-        if (grid.Columns[nameof(Producto.StockMinimo)] is { } stockMinimo) stockMinimo.HeaderText = "Stock mínimo";
+        if (grid.Columns[nameof(Producto.Stock)] is { } stock) stock.Visible = false;
+        if (grid.Columns[nameof(Producto.StockDisponible)] is { } stockDisponible)
+        {
+            stockDisponible.HeaderText = "Stock disponible";
+            stockDisponible.DefaultCellStyle.Format = "0.##";
+        }
+        if (grid.Columns[nameof(Producto.StockMinimo)] is { } stockMinimo)
+        {
+            stockMinimo.HeaderText = "Stock mínimo";
+            stockMinimo.DefaultCellStyle.Format = "0.##";
+        }
         if (grid.Columns[nameof(Producto.CategoriaNombre)] is { } categoria) categoria.HeaderText = "Categoría";
         if (grid.Columns[nameof(Producto.Activo)] is { } activo) activo.HeaderText = "Activo";
         if (grid.Columns[nameof(Producto.CategoriaId)] is { } categoriaId) categoriaId.Visible = false;

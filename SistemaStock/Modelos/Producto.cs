@@ -32,6 +32,8 @@ public sealed class Producto
     public TipoStock TipoStock { get; set; } = TipoStock.Directo;
     public int? Stock { get; set; }
     public int? StockMinimo { get; set; }
+    /// <summary>Stock para mostrar en el listado; se calcula desde productos o recetas y nunca se guarda.</summary>
+    public int StockDisponible { get; set; }
     public bool Activo { get; set; }
     public int CategoriaId { get; set; }
     public string CategoriaNombre { get; set; } = "";

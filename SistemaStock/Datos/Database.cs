@@ -92,6 +92,18 @@ internal static class Database
             """, connection);
         productCommand.ExecuteNonQuery();
 
+        using var recipeCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS recetas (
+                producto_codigo INT NOT NULL,
+                ingrediente_id INT NOT NULL,
+                cantidad DECIMAL(10,3) NOT NULL CHECK (cantidad > 0),
+                PRIMARY KEY (producto_codigo, ingrediente_id),
+                CONSTRAINT fk_recetas_productos FOREIGN KEY (producto_codigo) REFERENCES productos(codigo),
+                CONSTRAINT fk_recetas_ingredientes FOREIGN KEY (ingrediente_id) REFERENCES ingredientes(id)
+            ) ENGINE=InnoDB;
+            """, connection);
+        recipeCommand.ExecuteNonQuery();
+
         using var seedCommand = new MySqlCommand("""
             INSERT INTO categorias (nombre) VALUES ('Bebidas'), ('Platos'), ('Postres')
             ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);

@@ -9,7 +9,15 @@ internal sealed class ProductoRepositorio
     {
         using var db = Database.OpenConnection();
         using var cmd = new MySqlCommand("""
-            SELECT p.codigo, p.nombre, p.precio, p.tipo_stock, p.stock, p.stock_minimo, p.activo, p.categoria_id, c.nombre AS categoria_nombre
+            SELECT p.codigo, p.nombre, p.precio, p.tipo_stock, p.stock, p.stock_minimo, p.activo, p.categoria_id, c.nombre AS categoria_nombre,
+                   CASE WHEN p.tipo_stock = 'DIRECTO' THEN p.stock
+                        ELSE COALESCE((
+                            SELECT MIN(FLOOR(i.stock / r.cantidad))
+                            FROM recetas r
+                            INNER JOIN ingredientes i ON i.id = r.ingrediente_id
+                            WHERE r.producto_codigo = p.codigo
+                        ), 0)
+                   END AS stock_disponible
             FROM productos p
             INNER JOIN categorias c ON c.id = p.categoria_id
             WHERE p.nombre LIKE @busqueda AND (@categoriaId IS NULL OR p.categoria_id = @categoriaId)
@@ -87,6 +95,7 @@ internal sealed class ProductoRepositorio
         Precio = reader.GetDecimal("precio"), TipoStock = TipoStockMySql.FromDatabase(reader.GetString("tipo_stock")),
         Stock = reader.IsDBNull(reader.GetOrdinal("stock")) ? null : reader.GetInt32("stock"),
         StockMinimo = reader.IsDBNull(reader.GetOrdinal("stock_minimo")) ? null : reader.GetInt32("stock_minimo"),
+        StockDisponible = Convert.ToInt32(reader["stock_disponible"]),
         Activo = reader.GetBoolean("activo"), CategoriaId = reader.GetInt32("categoria_id"),
         CategoriaNombre = reader.GetString("categoria_nombre")
     };
