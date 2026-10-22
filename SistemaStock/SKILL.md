@@ -1,264 +1,103 @@
 ---
-name: winforms-baseform
-description: Guía y plantillas para construir formularios de C# Windows Forms (Visual Studio, .NET) con MySQL que comparten el mismo estilo mediante un BaseForm, una clase Theme con la paleta (Obsidian Black, Deep Charcoal, Blaze Orange, Hazard Yellow, Chalk White, Zinc Grey) y un menú lateral (sidebar). Usar SIEMPRE que el usuario trabaje en el sistema de stock y ventas del restaurante Chachín, cree o modifique un formulario, botón, DataGridView, panel o menú en Windows Forms, hable de tamaño mínimo/máximo de ventana, estilos, colores, diseño responsive (Dock/Anchor), o pida código de C# con WinForms, aunque no mencione BaseForm ni "skill".
+name: winforms-chachin
+description: Guía principal del sistema de stock y ventas del restaurante Chachín, hecho en C# Windows Forms (Visual Studio, .NET) con MySQL y MySqlConnector, namespace SistemaStock. Define cómo responder al equipo (principiantes), la arquitectura por carpetas, las reglas de oro de código y UI, y un mapa que indica qué documento de docs/ leer según la tarea (formularios y estilo con BaseForm/Theme/sidebar, tablas y Database.Initialize, repositorios y transacciones, reglas de negocio y flujos de venta, stock por receta, reportes, Git y errores típicos). Usar SIEMPRE que se cree, modifique o depure un formulario, UserControl, botón, DataGridView, menú, consulta SQL, tabla de MySQL, modelo, repositorio, reporte, o cualquier módulo de productos, ingredientes, recetas, mesas, ventas o stock del sistema Chachín, aunque el usuario no mencione esta skill.
 ---
 
-# Windows Forms + MySQL: BaseForm, Theme y Sidebar (sistema Chachín)
+# Sistema Chachín: guía principal
 
-El usuario es principiante en C#/WinForms y trabaja en equipo de tres con Git. Explicá de a poco, en español, y con código que compile. Nunca repitas estilos en cada formulario: todo lo visual vive en `Theme` y `BaseForm`.
+Este archivo es el punto de entrada: dice **cómo trabajar**, **cómo está armado el proyecto** y **qué reglas no se rompen**. El detalle vive en `docs/`. La sección 2 indica qué documento leer según la tarea: leer solo el que corresponda, no todos a la vez.
 
-## Reglas de oro
+## 1. Quién es el usuario y cómo responder
 
-1. **Todo formulario hereda de `BaseForm`** (`public partial class FrmVentas : BaseForm`). Nunca de `Form` directamente.
-2. **Ningún color, fuente o tamaño suelto** en los formularios. Siempre `Theme.Algo`. Si falta un valor, se agrega a `Theme`.
-3. **Tamaño**: mínimo `850 x 500` (lo define `BaseForm`), máximo = pantalla completa. No se setea `MaximumSize`. Arranca en `WindowState.Maximized`.
-4. **Responsive**: se usa `Dock`, `Anchor`, `TableLayoutPanel` y `FlowLayoutPanel`. Prohibido posicionar controles con píxeles fijos (`Location`) salvo dentro de un panel pequeño y fijo.
-5. **Fondo**: `Deep Charcoal` en todos los formularios y paneles de contenido. El **sidebar** va en `Obsidian Black`.
-6. **La conexión a MySQL no va en los formularios.** Va en una clase aparte (`Datos/Conexion.cs`) y las consultas son **parametrizadas** (nunca concatenar texto del usuario en el SQL).
+El equipo (tres personas) es **principiante** en C# y Windows Forms. Es un parcial que hay que **defender**, así que importa entender cada cosa.
 
-## Paleta
+Reglas para la IA:
 
-| Nombre | HEX | Uso |
-|---|---|---|
-| Obsidian Black | #0C0C0E | Sidebar, estructura base |
-| Deep Charcoal | #1F2024 | Fondo de formularios, tarjetas, paneles |
-| Blaze Orange | #FF5500 | Acento primario, botones de acción (CTA), ítem activo del menú |
-| Hazard Yellow | #FFD000 | Acento secundario, etiquetas, resaltados, advertencias |
-| Chalk White | #F4F4F6 | Texto principal |
-| Zinc Grey | #8E929C | Texto secundario, divisores, íconos inactivos |
+1. Responder en español, simple, explicando de a poco y con ejemplos chicos. Dar el *por qué* en una o dos frases.
+2. **Un cambio por vez.** No refactorizar cosas que no se pidieron.
+3. Entregar **el archivo completo** (no fragmentos sueltos), diciendo el **nombre exacto del archivo** y en qué carpeta va.
+4. Si hay que hacer algo en el **diseñador de Visual Studio** (arrastrar un control, cambiar Dock, propiedades), decirlo paso a paso, porque la IA no puede hacerlo por ellos.
+5. **No inventar** clases, métodos, columnas, tablas ni namespaces. Si falta información, pedir el archivo o preguntar. Si no se está seguro de algo, decirlo.
+6. **No se puede compilar ni ejecutar nada en el chat.** Nunca decir "compila" o "probado" si no se ejecutó. Cerrar cada respuesta con **"Qué revisar después de pegar esto"**: compilar con Ctrl+Shift+B, probar a 850x500 y maximizado, y probar la operación. Si el cambio toca stock o ventas, comprobar además que el stock quedó como se esperaba.
+7. **Contradicciones: no decidir solo.** Si el código real contradice la documentación, o dos documentos se contradicen, mostrar la diferencia y preguntar antes de seguir. Mientras tanto:
+   - el **código real** es la referencia de cómo está el proyecto hoy (nombres, clases, estructura);
+   - `docs/negocio.md` y `docs/esquema.md` son la referencia de cómo debe comportarse y guardarse la información.
+8. **Mantener la documentación al día.** Si el equipo decide cambiar el diseño, actualizar en el mismo paso el documento donde vive esa regla (ver sección 6) y avisar cuál se tocó.
 
-## Estructura de carpetas
+## 2. Mapa: qué documento leer según la tarea
+
+| Tarea | Leer |
+|---|---|
+| Crear o modificar un formulario, `UserControl`, diálogo, menú lateral, estilo, layout | `docs/ui-winforms.md` |
+| Crear o modificar una tabla o columna, `Database.Initialize()`, migrar `productos` | `docs/esquema.md` y `docs/codigo-csharp.md` |
+| Crear o modificar un modelo o repositorio, usar una transacción | `docs/codigo-csharp.md` |
+| Descontar o devolver stock, calcular stock disponible, abrir/agregar/quitar/cerrar/anular una venta | `docs/negocio.md`, `docs/flujos-y-reportes.md` y `docs/codigo-csharp.md` |
+| Armar un reporte | `docs/flujos-y-reportes.md` (y `docs/ui-winforms.md` si hay pantalla) |
+| Pantalla que mezcla UI y lógica (recetas, ventas de mesa) | `docs/ui-winforms.md` + `docs/negocio.md` + `docs/codigo-csharp.md` |
+| Dudas sobre qué debe hacer el sistema | `docs/negocio.md` |
+| Git, conflictos, un error al correr el programa | `docs/equipo-y-errores.md` |
+
+## 3. Estado actual del proyecto (verificado)
+
+- **Lenguaje/.NET**: C# moderno con **.NET 10 para Windows Forms**. El proyecto usa `namespace X;`, cadenas `"""` y `net10.0-windows`.
+- **Paquete MySQL**: **`MySqlConnector`** (ya en uso). No agregar `MySql.Data`.
+- **Namespace raíz**: **`SistemaStock`** (ej. `SistemaStock.Datos`). Usar el mismo prefijo en todo: `SistemaStock.Estilos`, `SistemaStock.Formularios`, `SistemaStock.Modelos`.
+- **Carpetas implementadas actualmente**:
 
 ```
-ChachinApp/
-├── Estilos/        Theme.cs, BaseForm.cs, BotonSidebar.cs
-├── Formularios/    FrmPrincipal.cs, FrmVentas.cs, FrmStock.cs ...
-├── Datos/          Conexion.cs, ProductoRepositorio.cs ...
-└── Modelos/        Producto.cs, Venta.cs ...
+ Datos/         Database.cs + repositorios implementados
+ Estilos/       Theme.cs, BaseForm.cs, BaseFormSidebar.cs
+ Formularios/   FrmLogin, FrmDashboard, FrmProductos, FrmUsers, FrmVentas
+ Modelos/       Categoria.cs, Producto.cs y Usuarios/User.cs
+Recursos/      imágenes e íconos
+Program.cs
 ```
 
-Nombres: formularios `FrmXxx`, botones `btnXxx`, etiquetas `lblXxx`, cajas de texto `txtXxx`, grillas `dgvXxx`, paneles `pnlXxx`.
+Los repositorios, modelos y formularios de ingredientes, recetas, mesas, ventas y reportes todavía no están implementados. Se agregarán según el orden de trabajo (sección 5). Esta guía vive en `SKILL.md` y los documentos relacionados en `docs/`.
 
-## Plantilla 1: Theme.cs
+**Arquitectura planificada:** una ventana principal `FrmPrincipal` con `UserControl` por módulo. Esa arquitectura todavía no reemplaza a la actual: hoy la navegación utiliza varios formularios que heredan de `BaseFormSidebar`.
 
-```csharp
-using System.Drawing;
-using System.Windows.Forms;
+- **Acceso a datos**: clase `internal static class Database` con `OpenConnection()` e `Initialize()`. **No crear otra clase de conexión** (nada de `Conexion.cs`).
+- **Cadena de conexión**: variable de entorno **`GESTION_VENTAS_CONNECTION`** (si no existe, usa `localhost`, base `gestion_ventas`, usuario `root`). **Nunca** subir contraseñas a GitHub.
+- **Base de datos**: `gestion_ventas`, creada por `Database.Initialize()` con `CREATE ... IF NOT EXISTS`.
+- **Tablas**: el diseño completo está en `docs/esquema.md`. Según el estado verificado antes de unificar esta guía, existen `usuarios`, `categorias` y `productos` (esta última en su versión anterior, sin `tipo_stock`). Pasarla al diseño nuevo requiere una migración: ver `docs/esquema.md`, sección «Estado actual y migración de `productos`». **`productos` usa `codigo` como clave, no `id`.**
+- **Roles observados/documentados**: el código actual usa también `Vendedor`, mientras que el diseño de negocio menciona `Admin`, `Cajero` y `Mozo`. Esta lista debe confirmarse antes de restringir permisos.
 
-public static class Theme
-{
-    // Paleta
-    public static readonly Color ObsidianBlack = ColorTranslator.FromHtml("#0C0C0E");
-    public static readonly Color DeepCharcoal  = ColorTranslator.FromHtml("#1F2024");
-    public static readonly Color BlazeOrange   = ColorTranslator.FromHtml("#FF5500");
-    public static readonly Color HazardYellow  = ColorTranslator.FromHtml("#FFD000");
-    public static readonly Color ChalkWhite    = ColorTranslator.FromHtml("#F4F4F6");
-    public static readonly Color ZincGrey      = ColorTranslator.FromHtml("#8E929C");
+## 4. Reglas de oro (código y UI)
 
-    // Tamaños de ventana
-    public static readonly Size TamanoMinimo = new Size(850, 500);
+1. **Arquitectura actual:** `FrmDashboard`, `FrmProductos`, `FrmUsers` y `FrmVentas` heredan de `BaseFormSidebar` y comparten la navegación. **Arquitectura planificada:** una sola ventana `FrmPrincipal` con un `UserControl` por módulo. No convertir formularios a `UserControl` sin una tarea específica.
+2. **Los diálogos** (Nuevo producto, Editar, Confirmar) son `Form` que heredan de **`BaseForm`** y se abren con `ShowDialog(this)`.
+3. **Nada de colores, fuentes o tamaños sueltos** en formularios: siempre `Theme.Algo`. Si falta algo, se agrega a `Theme.cs`.
+4. **Layout responsive**: `Dock`, `Anchor`, `TableLayoutPanel`, `FlowLayoutPanel`. Prohibido armar pantallas con `Location` en píxeles (salvo dentro de un panel chico y fijo).
+5. **SQL solo en `Datos/`** (repositorios), nunca dentro de los eventos de los botones. Siempre **parametrizado**: nunca `"... WHERE x = '" + texto + "'"`. Los formularios validan solo lo básico (campos vacíos, números válidos); las **reglas de negocio** (stock, estados) viven en los repositorios.
+6. **Contraseñas**: se guardan con hash (`hash_contrasena`). Nunca texto plano. Mantener el mecanismo del Login actual; no cambiarlo sin avisar.
+7. **No duplicar eventos**: si el `Click` ya se conectó en el diseñador, no volver a conectarlo en el constructor.
+8. **Antes de escribir una plantilla, revisar si el archivo ya existe.** Si existe, agregar o ajustar solo lo que falta.
 
-    // Fuentes
-    public static readonly Font FuenteNormal = new Font("Segoe UI", 10f);
-    public static readonly Font FuenteTitulo = new Font("Segoe UI", 18f, FontStyle.Bold);
-    public static readonly Font FuenteMenu   = new Font("Segoe UI Semibold", 10.5f);
+Las reglas de negocio (stock, transacciones, estados de venta, bajas lógicas) están en `docs/negocio.md` y son de lectura obligatoria antes de tocar stock o ventas.
 
-    // Botón de acción principal (CTA)
-    public static void EstilizarBotonPrimario(Button b)
-    {
-        b.FlatStyle = FlatStyle.Flat;
-        b.FlatAppearance.BorderSize = 0;
-        b.BackColor = BlazeOrange;
-        b.ForeColor = ChalkWhite;
-        b.Font = FuenteNormal;
-        b.Cursor = Cursors.Hand;
-    }
+## 5. Orden de trabajo
 
-    // Botón secundario (borde gris, sin relleno)
-    public static void EstilizarBotonSecundario(Button b)
-    {
-        b.FlatStyle = FlatStyle.Flat;
-        b.FlatAppearance.BorderColor = ZincGrey;
-        b.FlatAppearance.BorderSize = 1;
-        b.BackColor = DeepCharcoal;
-        b.ForeColor = ChalkWhite;
-        b.Font = FuenteNormal;
-        b.Cursor = Cursors.Hand;
-    }
+Las tablas nuevas **no se crean antes de su paso**: cada una se agrega a `Database.Initialize()` cuando el equipo llega a ese paso, respetando el orden de creación de `docs/esquema.md`.
 
-    // Caja de texto
-    public static void EstilizarTextBox(TextBox t)
-    {
-        t.BackColor = ObsidianBlack;
-        t.ForeColor = ChalkWhite;
-        t.BorderStyle = BorderStyle.FixedSingle;
-        t.Font = FuenteNormal;
-    }
+| Paso | Qué | Tablas | Leer |
+|---|---|---|---|
+| 1 | Productos y categorías (sumar `tipo_stock`) | ajustar `productos` (migración) | `esquema.md`, `codigo-csharp.md`, `ui-winforms.md` |
+| 2 | Ingredientes (alta, baja, modificación, filtro) | `ingredientes` | ídem + `negocio.md` |
+| 3 | Recetas (asociar producto con ingredientes y cantidades) | `recetas` | ídem + `negocio.md` |
+| 4 | Mesas (ABM simple) | `mesas` | `esquema.md`, `ui-winforms.md` |
+| 5 | Ventas: abrir, agregar y quitar líneas, cerrar, anular | `ventas`, `detalle_venta` | `negocio.md`, `flujos-y-reportes.md`, `codigo-csharp.md` |
+| 6 | Reportes | ninguna (son consultas) | `flujos-y-reportes.md` |
 
-    // Grilla de datos
-    public static void EstilizarGrilla(DataGridView g)
-    {
-        g.BackgroundColor = DeepCharcoal;
-        g.BorderStyle = BorderStyle.None;
-        g.EnableHeadersVisualStyles = false;
-        g.GridColor = ZincGrey;
-        g.RowHeadersVisible = false;
-        g.AllowUserToAddRows = false;
-        g.ReadOnly = true;
-        g.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        g.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+## 6. Dónde vive cada cosa
 
-        g.ColumnHeadersDefaultCellStyle.BackColor = ObsidianBlack;
-        g.ColumnHeadersDefaultCellStyle.ForeColor = HazardYellow;
-        g.ColumnHeadersDefaultCellStyle.Font = FuenteMenu;
+Cada tema tiene **un solo lugar**. No repetirlo en otro archivo: enlazarlo.
 
-        g.DefaultCellStyle.BackColor = DeepCharcoal;
-        g.DefaultCellStyle.ForeColor = ChalkWhite;
-        g.DefaultCellStyle.SelectionBackColor = BlazeOrange;
-        g.DefaultCellStyle.SelectionForeColor = ChalkWhite;
-    }
-
-    // Aplica estilo a todos los controles de un contenedor (recursivo)
-    public static void Aplicar(Control raiz)
-    {
-        foreach (Control c in raiz.Controls)
-        {
-            switch (c)
-            {
-                case DataGridView g: EstilizarGrilla(g); break;
-                case TextBox t: EstilizarTextBox(t); break;
-                case Label l: l.ForeColor = ChalkWhite; l.Font = FuenteNormal; break;
-            }
-            if (c.HasChildren) Aplicar(c);
-        }
-    }
-}
-```
-
-Los botones se estilizan a mano (`Theme.EstilizarBotonPrimario(btnGuardar)`) porque no todos son CTA.
-
-## Plantilla 2: BaseForm.cs
-
-```csharp
-using System;
-using System.Windows.Forms;
-
-public partial class BaseForm : Form
-{
-    public BaseForm()
-    {
-        InitializeComponent();
-
-        AutoScaleMode = AutoScaleMode.Dpi;       // se ve igual en distintas pantallas/escala
-        MinimumSize = Theme.TamanoMinimo;        // 850 x 500: no se achica más
-        // NO se define MaximumSize: el máximo es la pantalla completa
-        StartPosition = FormStartPosition.CenterScreen;
-        WindowState = FormWindowState.Maximized;
-
-        BackColor = Theme.DeepCharcoal;
-        ForeColor = Theme.ChalkWhite;
-        Font = Theme.FuenteNormal;
-        DoubleBuffered = true;                   // menos parpadeo al redimensionar
-    }
-
-    protected override void OnLoad(EventArgs e)
-    {
-        base.OnLoad(e);
-        if (!DesignMode) Theme.Aplicar(this);    // estiliza labels, textbox y grillas
-    }
-}
-```
-
-Importante para el diseñador de Visual Studio: **compilar (Ctrl+Shift+B)** antes de crear un formulario heredado. Si el diseñador falla en `BaseForm`, revisar que `InitializeComponent()` exista (si `BaseForm` se creó como "Formulario", lo tiene).
-
-Para agregar un formulario nuevo: clic derecho en la carpeta > Agregar > Formulario heredado (o crear un Form normal y cambiar `: Form` por `: BaseForm` en ambos archivos `.cs` y `.Designer.cs` si hiciera falta).
-
-## Plantilla 3: Sidebar (FrmPrincipal)
-
-`FrmPrincipal : BaseForm` es el "marco" de la aplicación: sidebar a la izquierda, contenido a la derecha. Las pantallas (Ventas, Stock, etc.) se cargan dentro de `pnlContenido`.
-
-Controles en el diseñador:
-- `pnlSidebar`: `Dock = Left`, `Width = 220`, `BackColor = Theme.ObsidianBlack`.
-- `pnlContenido`: `Dock = Fill`, `BackColor = Theme.DeepCharcoal`. **Agregar `pnlContenido` primero o ponerlo "Enviar al fondo"** para que el Dock Fill respete el sidebar.
-- Dentro de `pnlSidebar`: un `Label lblLogo` arriba (`Dock = Top`) y los botones del menú (`Dock = Top`, alto 48).
-
-```csharp
-public partial class FrmPrincipal : BaseForm
-{
-    private Button _botonActivo;
-
-    public FrmPrincipal()
-    {
-        InitializeComponent();
-        pnlSidebar.BackColor = Theme.ObsidianBlack;
-        pnlContenido.BackColor = Theme.DeepCharcoal;
-
-        foreach (Control c in pnlSidebar.Controls)
-            if (c is Button b) EstilizarItemMenu(b);
-
-        btnVentas.Click += (s, e) => Navegar(btnVentas, new UcVentas());
-        btnStock.Click  += (s, e) => Navegar(btnStock,  new UcStock());
-    }
-
-    private void EstilizarItemMenu(Button b)
-    {
-        b.Dock = DockStyle.Top;
-        b.Height = 48;
-        b.FlatStyle = FlatStyle.Flat;
-        b.FlatAppearance.BorderSize = 0;
-        b.FlatAppearance.MouseOverBackColor = Theme.DeepCharcoal;
-        b.BackColor = Theme.ObsidianBlack;
-        b.ForeColor = Theme.ZincGrey;          // inactivo
-        b.Font = Theme.FuenteMenu;
-        b.TextAlign = ContentAlignment.MiddleLeft;
-        b.Padding = new Padding(16, 0, 0, 0);
-        b.Cursor = Cursors.Hand;
-    }
-
-    private void Navegar(Button boton, UserControl pantalla)
-    {
-        if (_botonActivo != null) _botonActivo.ForeColor = Theme.ZincGrey;
-        _botonActivo = boton;
-        boton.ForeColor = Theme.BlazeOrange;   // activo
-
-        pnlContenido.Controls.Clear();
-        pantalla.Dock = DockStyle.Fill;
-        pantalla.BackColor = Theme.DeepCharcoal;
-        pnlContenido.Controls.Add(pantalla);
-        Theme.Aplicar(pantalla);
-    }
-}
-```
-
-Las pantallas internas (`UcVentas`, `UcStock`) son **UserControl** (no Form), porque un menú lateral con Forms embebidos da problemas de tamaño y foco. Los formularios secundarios (ej. diálogo "Nuevo producto") sí heredan de `BaseForm`; en esos casos poner `WindowState = Normal`, `StartPosition = CenterParent` y `ShowDialog(this)`.
-
-## Layout responsive: cómo armar una pantalla
-
-- Estructura: `TableLayoutPanel` con filas/columnas en **porcentaje** (`SizeType.Percent`), no en píxeles.
-- Título arriba (`Dock = Top`), grilla en el centro (`Dock = Fill`), botones abajo en un `FlowLayoutPanel` (`Dock = Bottom`).
-- Botones sueltos que deban quedar en una esquina: `Anchor = Bottom | Right`.
-- Probar siempre dos tamaños: el mínimo (850x500) y pantalla completa. Si algo se corta o se superpone en 850x500, corregir con Dock/Anchor o `AutoScroll = true` en el panel contenedor.
-
-## MySQL (resumen)
-
-- Paquete NuGet: `MySql.Data` (o `MySqlConnector`).
-- Cadena de conexión en `App.config` (no en el código ni subida con contraseñas reales a GitHub; usar un `App.config.example`).
-- Consultas con parámetros:
-
-```csharp
-using (var cn = Conexion.Obtener())
-using (var cmd = new MySqlCommand("SELECT * FROM productos WHERE id = @id", cn))
-{
-    cmd.Parameters.AddWithValue("@id", id);
-    cn.Open();
-    using (var rd = cmd.ExecuteReader()) { /* leer */ }
-}
-```
-
-## Cómo trabajar con el usuario
-
-1. Si pide un formulario nuevo: dar primero la lista de controles del diseñador (nombre, tipo, Dock/Anchor) y luego el código.
-2. Si pide un cambio de estilo: modificarlo en `Theme.cs`, no en cada formulario.
-3. Si algo del diseñador de Visual Studio puede confundir (compilar antes, orden de Dock, formulario heredado), decirlo explícitamente.
-4. Explicar el *por qué* en una o dos frases; es un parcial que tiene que defender.
-5. Antes de cerrar, revisar la lista: ¿hereda de BaseForm? ¿usa Theme? ¿se ve bien a 850x500 y a pantalla completa? ¿sin SQL concatenado?
+| Tema | Archivo único |
+|---|---|
+| Reglas de negocio, estados de venta, pendientes con la clienta | `docs/negocio.md` |
+| Tablas, columnas, orden de creación, convenciones SQL, migración | `docs/esquema.md` |
+| SQL de stock, ventas y reportes | `docs/flujos-y-reportes.md` |
+| `Database.cs`, modelos, repositorios, transacciones | `docs/codigo-csharp.md` |
+| Paleta, `Theme`, `BaseForm`, sidebar, páginas, diálogos, layout, login | `docs/ui-winforms.md` |
+| Git y errores típicos | `docs/equipo-y-errores.md` |
