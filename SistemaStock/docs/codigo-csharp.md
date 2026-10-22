@@ -2,15 +2,7 @@
 
 Namespace base: `SistemaStock`. Librería: `MySqlConnector`. La estructura de carpetas está en `../SKILL.md` (sección 3). Tablas: `esquema.md`. SQL de cada operación: `flujos-y-reportes.md`. Reglas de negocio: `negocio.md`. Pantallas: `ui-winforms.md`.
 
-Los formularios no contienen SQL de negocio: llaman a los repositorios. En el código actual los repositorios son clases `internal sealed` que se instancian desde los formularios, por ejemplo `new ProductoRepositorio()`.
-
-## Estado implementado actualmente
-
-El proyecto tiene implementados `Database`, `CategoriaRepositorio`, `ProductoRepositorio` y `UserRepository`. `Database.Initialize()` crea actualmente las tablas `usuarios`, `categorias` y `productos` con el esquema anterior de productos: `codigo`, `nombre`, `precio`, `stock`, `activo` y `categoria_id`.
-
-`ProductoRepositorio` expone actualmente `GetAll(string busqueda = "", int? categoriaId = null)`, `Create(Producto producto)`, `Update(Producto producto)` y `Deactivate(int codigo)`. El modelo `Producto` contiene `Codigo`, `Nombre`, `Precio`, `Stock`, `Activo`, `CategoriaId` y `CategoriaNombre`.
-
-Ingredientes, recetas, `TipoStock`, transacciones de ventas y los repositorios de los módulos restantes pertenecen al diseño planificado. Los ejemplos de este documento deben implementarse solamente cuando se agregue ese módulo y se actualice también `Database.Initialize()`.
+Los formularios no contienen SQL: llaman a los repositorios.
 
 ## Contenido
 
@@ -21,7 +13,7 @@ Ingredientes, recetas, `TipoStock`, transacciones de ventas y los repositorios d
 - Transacciones
 - Ejemplo: descontar el stock de una receta
 
-## Database.cs: Initialize() dividido (diseño planificado)
+## Database.cs: Initialize() dividido
 
 `Database.cs` **ya existe**: agregar los métodos `CrearTablaXxx` sin cambiar cómo se arma la conexión ni crear otra clase. Un método por tabla, llamados en el orden de dependencias de `esquema.md` (sección «Orden de creación»). Todos reciben la misma conexión abierta.
 
@@ -68,7 +60,7 @@ private static void CrearTablaMesas(MySqlConnection connection) =>
 
 `builder` y `dbName` salen del código que ya tiene `Database.cs`; el bloque de arriba muestra la forma, no reemplaza lo existente. El SQL de cada tabla está en `esquema.md`.
 
-## Modelos y enums (diseño planificado)
+## Modelos y enums
 
 Clases simples con propiedades, en `Modelos/`. Enums para los tipos cerrados:
 
@@ -126,7 +118,7 @@ public class Producto
 - Las reglas de negocio (stock, estados) se validan acá, no en los formularios.
 - En lugar de borrar registros se pone `activo = 0` (ver `negocio.md`).
 
-## Ejemplo futuro: ProductoRepositorio con `tipo_stock`
+## Ejemplo: ProductoRepositorio
 
 Consultas parametrizadas. Se actualizó para `tipo_stock`: `stock` y `stock_minimo` pueden ser `NULL`, y el listado trae el stock disponible calculado. Se usa `Convert.ToInt32` en `stock_disponible` porque la consulta mezcla un entero y un resultado de `FLOOR` sobre decimales.
 

@@ -2,10 +2,6 @@
 
 Sistema de gestión del local gastronómico Chachín. Este documento dice **cómo debe comportarse** el sistema. Tablas y columnas: `esquema.md`. SQL: `flujos-y-reportes.md`. Código C#: `codigo-csharp.md`. Guía general: `../SKILL.md`.
 
-## Alcance implementado actualmente
-
-El código actual tiene login, usuarios, categorías y productos con stock directo. Ingredientes, recetas, mesas, ventas, detalle de ventas y reportes todavía forman parte del diseño planificado y no están implementados en la aplicación ni en `Database.Initialize()`.
-
 Si el código o una petición contradicen estas reglas, avisar al usuario antes de seguir.
 
 ## Contenido
@@ -21,14 +17,13 @@ Si el código o una petición contradicen estas reglas, avisar al usuario antes 
 
 ## Productos, ingredientes y recetas
 
-- **Categorías de productos**: Platos, Bebidas, Postres (tabla `categorias`, con semilla en `Initialize()`). Esto sí está implementado actualmente.
+- **Categorías de productos**: Platos, Bebidas, Postres (tabla `categorias`, con semilla en `Initialize()`).
 - **Ingredientes** son una entidad aparte. No son una categoría: se consumen, no se venden.
 - Cada producto tiene `tipo_stock`:
   - `DIRECTO`: el stock vive en `productos.stock` (ej. Coca 3l, que se compra y se revende).
   - `POR_RECETA`: el stock **no se guarda**, se calcula desde los ingredientes según su receta (ej. sándwich de milanesa). Tener dos fuentes de verdad desincroniza los datos.
 - **Stock disponible de un plato** = el mínimo de `FLOOR(stock_ingrediente / cantidad_en_receta)` entre todos sus ingredientes. Ejemplo: 4 milanesas, 2 panes, 2 huevos, 2 quesos y 2 jamones, con receta de 1 de cada uno, dan 2 sándwiches. La consulta está en `flujos-y-reportes.md`.
 - **Recetas**: una pantalla permite definir, por producto `POR_RECETA`, qué ingredientes lleva y en qué cantidad.
-- **Roles**: el diseño original menciona `Admin`, `Cajero` y `Mozo`, pero el código actual también utiliza `Vendedor`. Confirmar con el equipo la lista definitiva antes de implementar permisos por rol.
 
 ## Stock
 
