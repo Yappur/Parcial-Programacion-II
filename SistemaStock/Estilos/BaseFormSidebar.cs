@@ -8,6 +8,7 @@ public enum PaginaApp
 {
     Dashboard,
     Productos,
+    Mesas,
     Usuarios,
     Ventas
 }
@@ -63,6 +64,7 @@ public class BaseFormSidebar : BaseForm
         layout.Controls.Add(navegacion, 0, 1);
         navegacion.Controls.Add(CrearBoton("Dashboard", PaginaApp.Dashboard));
         navegacion.Controls.Add(CrearBoton("Productos", PaginaApp.Productos));
+        navegacion.Controls.Add(CrearBoton("Mesas", PaginaApp.Mesas));
         navegacion.Controls.Add(CrearBoton("Usuarios", PaginaApp.Usuarios));
         navegacion.Controls.Add(CrearBoton("Ventas", PaginaApp.Ventas));
 
@@ -104,6 +106,7 @@ public class BaseFormSidebar : BaseForm
         {
             PaginaApp.Dashboard => new FrmDashboard(usuarioActual),
             PaginaApp.Productos => new FrmProductos(usuarioActual),
+            PaginaApp.Mesas => new FrmMesas(usuarioActual),
             PaginaApp.Usuarios => new FrmUsers(usuarioActual),
             PaginaApp.Ventas => new FrmVentas(usuarioActual),
             _ => throw new ArgumentOutOfRangeException(nameof(destino))
