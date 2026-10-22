@@ -5,6 +5,178 @@ namespace SistemaStock.Datos;
 
 internal sealed class VentaRepositorio
 {
+    public List<VentaPendiente> ListarPendientes()
+    {
+        using var cn = Database.OpenConnection();
+        using var cmd = new MySqlCommand("""
+            SELECT id, tipo_venta, mesa_id, total
+            FROM ventas
+            WHERE estado = 'PENDIENTE'
+            ORDER BY fecha_hora, id;
+            """, cn);
+        using var rd = cmd.ExecuteReader();
+        var ventas = new List<VentaPendiente>();
+        while (rd.Read())
+        {
+            var tipo = ConversionesEnum.ATipoVenta(rd.GetString("tipo_venta"));
+            string tipoTexto = tipo switch
+            {
+                TipoVenta.Mesa => $"Mesa {rd.GetInt32("mesa_id")}",
+                TipoVenta.Mostrador => "Mostrador",
+                TipoVenta.Delivery => "Delivery",
+                _ => throw new ArgumentOutOfRangeException()
+            };
+            ventas.Add(new VentaPendiente
+            {
+                Id = rd.GetInt32("id"),
+                Total = rd.GetDecimal("total"),
+                Descripcion = $"Venta #{rd.GetInt32("id")} · {tipoTexto} · {rd.GetDecimal("total"):C2}"
+            });
+        }
+        return ventas;
+    }
+
+    public List<DetalleVenta> ListarLineas(int ventaId)
+    {
+        using var cn = Database.OpenConnection();
+        using var cmd = new MySqlCommand("""
+            SELECT d.id, d.venta_id, d.producto_codigo, p.nombre AS producto_nombre,
+                   d.cantidad, d.precio_unitario, d.subtotal
+            FROM detalle_venta d
+            INNER JOIN productos p ON p.codigo = d.producto_codigo
+            WHERE d.venta_id = @ventaId
+            ORDER BY d.id;
+            """, cn);
+        cmd.Parameters.AddWithValue("@ventaId", ventaId);
+        using var rd = cmd.ExecuteReader();
+        var lineas = new List<DetalleVenta>();
+        while (rd.Read())
+        {
+            lineas.Add(new DetalleVenta
+            {
+                Id = rd.GetInt32("id"),
+                VentaId = rd.GetInt32("venta_id"),
+                ProductoCodigo = rd.GetInt32("producto_codigo"),
+                ProductoNombre = rd.GetString("producto_nombre"),
+                Cantidad = rd.GetInt32("cantidad"),
+                PrecioUnitario = rd.GetDecimal("precio_unitario"),
+                Subtotal = rd.GetDecimal("subtotal")
+            });
+        }
+        return lineas;
+    }
+
+    public void AgregarLinea(int ventaId, int productoCodigo, int cantidad)
+    {
+        if (ventaId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(ventaId), "Elegí una venta pendiente.");
+        if (productoCodigo <= 0)
+            throw new ArgumentOutOfRangeException(nameof(productoCodigo), "Elegí un producto.");
+        if (cantidad <= 0)
+            throw new ArgumentOutOfRangeException(nameof(cantidad), "La cantidad debe ser mayor que cero.");
+
+        using var cn = Database.OpenConnection();
+        using var tx = cn.BeginTransaction();
+        try
+        {
+            ValidarVentaPendiente(cn, tx, ventaId);
+            ProductoVenta producto = LeerProductoParaVenta(cn, tx, productoCodigo);
+
+            if (producto.TipoStock == TipoStock.Directo)
+                DescontarProductoDirecto(cn, tx, producto, cantidad);
+            else
+                DescontarIngredientes(cn, tx, producto, cantidad);
+
+            decimal subtotal = producto.Precio * cantidad;
+            using (var insertar = new MySqlCommand("""
+                INSERT INTO detalle_venta
+                    (venta_id, producto_codigo, cantidad, precio_unitario, subtotal)
+                VALUES (@ventaId, @productoCodigo, @cantidad, @precio, @subtotal);
+                """, cn, tx))
+            {
+                insertar.Parameters.AddWithValue("@ventaId", ventaId);
+                insertar.Parameters.AddWithValue("@productoCodigo", productoCodigo);
+                insertar.Parameters.AddWithValue("@cantidad", cantidad);
+                insertar.Parameters.AddWithValue("@precio", producto.Precio);
+                insertar.Parameters.AddWithValue("@subtotal", subtotal);
+                insertar.ExecuteNonQuery();
+            }
+
+            RecalcularTotal(cn, tx, ventaId);
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+
+    public void QuitarLinea(int ventaId, int lineaId)
+    {
+        if (ventaId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(ventaId), "Elegí una venta pendiente.");
+        if (lineaId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(lineaId), "Elegí una línea válida.");
+
+        using var cn = Database.OpenConnection();
+        using var tx = cn.BeginTransaction();
+        try
+        {
+            ValidarVentaPendiente(cn, tx, ventaId);
+            int productoCodigo;
+            int cantidad;
+            using (var cmd = new MySqlCommand("""
+                SELECT producto_codigo, cantidad
+                FROM detalle_venta
+                WHERE id = @lineaId AND venta_id = @ventaId
+                FOR UPDATE;
+                """, cn, tx))
+            {
+                cmd.Parameters.AddWithValue("@lineaId", lineaId);
+                cmd.Parameters.AddWithValue("@ventaId", ventaId);
+                using var rd = cmd.ExecuteReader();
+                if (!rd.Read())
+                    throw new InvalidOperationException("La línea ya no existe en esa venta.");
+                productoCodigo = rd.GetInt32("producto_codigo");
+                cantidad = rd.GetInt32("cantidad");
+            }
+
+            ProductoVenta producto = LeerProductoParaVenta(cn, tx, productoCodigo, exigirActivo: false);
+            if (producto.TipoStock == TipoStock.Directo)
+            {
+                using var devolver = new MySqlCommand("""
+                    UPDATE productos SET stock = stock + @cantidad WHERE codigo = @codigo;
+                    """, cn, tx);
+                devolver.Parameters.AddWithValue("@cantidad", cantidad);
+                devolver.Parameters.AddWithValue("@codigo", productoCodigo);
+                if (devolver.ExecuteNonQuery() == 0)
+                    throw new InvalidOperationException($"No se pudo devolver el stock de {producto.Nombre}.");
+            }
+            else
+            {
+                DevolverIngredientesVigentes(cn, tx, producto, cantidad);
+            }
+
+            using (var borrar = new MySqlCommand(
+                "DELETE FROM detalle_venta WHERE id = @lineaId AND venta_id = @ventaId;", cn, tx))
+            {
+                borrar.Parameters.AddWithValue("@lineaId", lineaId);
+                borrar.Parameters.AddWithValue("@ventaId", ventaId);
+                if (borrar.ExecuteNonQuery() == 0)
+                    throw new InvalidOperationException("La línea ya no existe en esa venta.");
+            }
+
+            RecalcularTotal(cn, tx, ventaId);
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+
     public List<MesaVenta> ListarMesasConEstado()
     {
         using var cn = Database.OpenConnection();
@@ -82,4 +254,142 @@ internal sealed class VentaRepositorio
             throw;
         }
     }
+
+    private static void ValidarVentaPendiente(MySqlConnection cn, MySqlTransaction tx, int ventaId)
+    {
+        using var cmd = new MySqlCommand(
+            "SELECT estado FROM ventas WHERE id = @ventaId FOR UPDATE;", cn, tx);
+        cmd.Parameters.AddWithValue("@ventaId", ventaId);
+        var estado = cmd.ExecuteScalar() as string;
+        if (estado != "PENDIENTE")
+            throw new InvalidOperationException("La venta no existe o ya no está pendiente.");
+    }
+
+    private static ProductoVenta LeerProductoParaVenta(
+        MySqlConnection cn, MySqlTransaction tx, int productoCodigo, bool exigirActivo = true)
+    {
+        using var cmd = new MySqlCommand("""
+            SELECT nombre, precio, tipo_stock, activo
+            FROM productos
+            WHERE codigo = @codigo
+            FOR UPDATE;
+            """, cn, tx);
+        cmd.Parameters.AddWithValue("@codigo", productoCodigo);
+        using var rd = cmd.ExecuteReader();
+        if (!rd.Read())
+            throw new InvalidOperationException("El producto seleccionado ya no existe.");
+        if (exigirActivo && !rd.GetBoolean("activo"))
+            throw new InvalidOperationException("El producto seleccionado está inactivo.");
+
+        return new ProductoVenta(
+            productoCodigo,
+            rd.GetString("nombre"),
+            rd.GetDecimal("precio"),
+            TipoStockMySql.FromDatabase(rd.GetString("tipo_stock")));
+    }
+
+    private static void DescontarProductoDirecto(
+        MySqlConnection cn, MySqlTransaction tx, ProductoVenta producto, int cantidad)
+    {
+        using var cmd = new MySqlCommand("""
+            UPDATE productos
+            SET stock = stock - @cantidad
+            WHERE codigo = @codigo AND stock >= @cantidad;
+            """, cn, tx);
+        cmd.Parameters.AddWithValue("@cantidad", cantidad);
+        cmd.Parameters.AddWithValue("@codigo", producto.Codigo);
+        if (cmd.ExecuteNonQuery() == 0)
+            throw new InvalidOperationException($"No hay stock suficiente de {producto.Nombre}.");
+    }
+
+    private static void DescontarIngredientes(
+        MySqlConnection cn, MySqlTransaction tx, ProductoVenta producto, int cantidad)
+    {
+        var receta = new List<(int IngredienteId, string Nombre, decimal Cantidad)>();
+        using (var cmd = new MySqlCommand("""
+            SELECT i.id, i.nombre, r.cantidad
+            FROM recetas r
+            INNER JOIN ingredientes i ON i.id = r.ingrediente_id
+            WHERE r.producto_codigo = @codigo
+            ORDER BY i.id
+            FOR UPDATE;
+            """, cn, tx))
+        {
+            cmd.Parameters.AddWithValue("@codigo", producto.Codigo);
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read())
+                receta.Add((rd.GetInt32("id"), rd.GetString("nombre"), rd.GetDecimal("cantidad")));
+        }
+
+        if (receta.Count == 0)
+            throw new InvalidOperationException($"El producto {producto.Nombre} no tiene una receta cargada.");
+
+        foreach (var ingrediente in receta)
+        {
+            decimal necesario = ingrediente.Cantidad * cantidad;
+            using var cmd = new MySqlCommand("""
+                UPDATE ingredientes
+                SET stock = stock - @necesario
+                WHERE id = @id AND stock >= @necesario;
+                """, cn, tx);
+            cmd.Parameters.AddWithValue("@necesario", necesario);
+            cmd.Parameters.AddWithValue("@id", ingrediente.IngredienteId);
+            if (cmd.ExecuteNonQuery() == 0)
+                throw new InvalidOperationException(
+                    $"No hay stock suficiente de {ingrediente.Nombre} para preparar {producto.Nombre}.");
+        }
+    }
+
+    private static void DevolverIngredientesVigentes(
+        MySqlConnection cn, MySqlTransaction tx, ProductoVenta producto, int cantidad)
+    {
+        var receta = new List<(int IngredienteId, string Nombre, decimal Cantidad)>();
+        using (var cmd = new MySqlCommand("""
+            SELECT i.id, i.nombre, r.cantidad
+            FROM recetas r
+            INNER JOIN ingredientes i ON i.id = r.ingrediente_id
+            WHERE r.producto_codigo = @codigo
+            ORDER BY i.id
+            FOR UPDATE;
+            """, cn, tx))
+        {
+            cmd.Parameters.AddWithValue("@codigo", producto.Codigo);
+            using var rd = cmd.ExecuteReader();
+            while (rd.Read())
+                receta.Add((rd.GetInt32("id"), rd.GetString("nombre"), rd.GetDecimal("cantidad")));
+        }
+
+        if (receta.Count == 0)
+            throw new InvalidOperationException(
+                $"No se quitó {producto.Nombre}: no tiene una receta vigente para devolver sus ingredientes.");
+
+        foreach (var ingrediente in receta)
+        {
+            using var cmd = new MySqlCommand("""
+                UPDATE ingredientes
+                SET stock = stock + @cantidad
+                WHERE id = @id;
+                """, cn, tx);
+            cmd.Parameters.AddWithValue("@cantidad", ingrediente.Cantidad * cantidad);
+            cmd.Parameters.AddWithValue("@id", ingrediente.IngredienteId);
+            if (cmd.ExecuteNonQuery() == 0)
+                throw new InvalidOperationException(
+                    $"No se pudo devolver el stock de {ingrediente.Nombre} para {producto.Nombre}.");
+        }
+    }
+
+    private static void RecalcularTotal(MySqlConnection cn, MySqlTransaction tx, int ventaId)
+    {
+        using var cmd = new MySqlCommand("""
+            UPDATE ventas
+            SET total = (SELECT COALESCE(SUM(subtotal), 0)
+                         FROM detalle_venta WHERE venta_id = @ventaId)
+            WHERE id = @ventaId AND estado = 'PENDIENTE';
+            """, cn, tx);
+        cmd.Parameters.AddWithValue("@ventaId", ventaId);
+        cmd.ExecuteNonQuery();
+    }
+
+    private sealed record ProductoVenta(
+        int Codigo, string Nombre, decimal Precio, TipoStock TipoStock);
 }

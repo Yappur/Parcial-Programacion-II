@@ -39,9 +39,19 @@ public sealed class DetalleVenta
     public int Id { get; set; }
     public int VentaId { get; set; }
     public int ProductoCodigo { get; set; }
+    public string ProductoNombre { get; set; } = "";
     public int Cantidad { get; set; }
     public decimal PrecioUnitario { get; set; }
     public decimal Subtotal { get; set; }
+}
+
+public sealed class VentaPendiente
+{
+    public int Id { get; set; }
+    public string Descripcion { get; set; } = "";
+    public decimal Total { get; set; }
+
+    public override string ToString() => Descripcion;
 }
 
 public sealed class MesaVenta
