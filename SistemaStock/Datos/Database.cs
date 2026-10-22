@@ -55,6 +55,28 @@ internal static class Database
             """, connection);
         categoryCommand.ExecuteNonQuery();
 
+        using var tableCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS mesas (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                numero INT NOT NULL UNIQUE,
+                activo BOOLEAN NOT NULL DEFAULT TRUE
+            ) ENGINE=InnoDB;
+            """, connection);
+        tableCommand.ExecuteNonQuery();
+
+        using var capacityColumnCheck = new MySqlCommand("""
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'mesas'
+              AND COLUMN_NAME = 'capacidad';
+            """, connection);
+        if (Convert.ToInt32(capacityColumnCheck.ExecuteScalar()) > 0)
+        {
+            using var removeCapacityColumn = new MySqlCommand("ALTER TABLE mesas DROP COLUMN capacidad;", connection);
+            removeCapacityColumn.ExecuteNonQuery();
+        }
+
         using var productCommand = new MySqlCommand("""
             CREATE TABLE IF NOT EXISTS productos (
                 codigo INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
