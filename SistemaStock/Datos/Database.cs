@@ -64,6 +64,17 @@ internal static class Database
             """, connection);
         tableCommand.ExecuteNonQuery();
 
+        using var ingredientCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS ingredientes (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                nombre VARCHAR(100) NOT NULL UNIQUE,
+                unidad ENUM('un','g','ml') NOT NULL,
+                stock DECIMAL(10,3) NOT NULL DEFAULT 0 CHECK (stock >= 0),
+                stock_minimo DECIMAL(10,3) NOT NULL DEFAULT 0 CHECK (stock_minimo >= 0),
+                activo BOOLEAN NOT NULL DEFAULT TRUE
+            ) ENGINE=InnoDB;
+            """, connection);
+        ingredientCommand.ExecuteNonQuery();
         using var capacityColumnCheck = new MySqlCommand("""
             SELECT COUNT(*)
             FROM information_schema.COLUMNS
@@ -82,13 +93,27 @@ internal static class Database
                 codigo INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 nombre VARCHAR(100) NOT NULL,
                 precio DECIMAL(10,2) NOT NULL CHECK (precio >= 0),
-                stock INT NOT NULL CHECK (stock >= 0),
-                activo BOOLEAN NOT NULL DEFAULT TRUE,
                 categoria_id INT NOT NULL,
+                tipo_stock ENUM('DIRECTO','POR_RECETA') NOT NULL,
+                stock INT NULL CHECK (stock IS NULL OR stock >= 0),
+                stock_minimo INT NULL CHECK (stock_minimo IS NULL OR stock_minimo >= 0),
+                activo BOOLEAN NOT NULL DEFAULT TRUE,
                 CONSTRAINT fk_productos_categorias FOREIGN KEY (categoria_id) REFERENCES categorias(id)
             ) ENGINE=InnoDB;
             """, connection);
         productCommand.ExecuteNonQuery();
+
+        using var recipeCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS recetas (
+                producto_codigo INT NOT NULL,
+                ingrediente_id INT NOT NULL,
+                cantidad DECIMAL(10,3) NOT NULL CHECK (cantidad > 0),
+                PRIMARY KEY (producto_codigo, ingrediente_id),
+                CONSTRAINT fk_recetas_productos FOREIGN KEY (producto_codigo) REFERENCES productos(codigo),
+                CONSTRAINT fk_recetas_ingredientes FOREIGN KEY (ingrediente_id) REFERENCES ingredientes(id)
+            ) ENGINE=InnoDB;
+            """, connection);
+        recipeCommand.ExecuteNonQuery();
 
         using var seedCommand = new MySqlCommand("""
             INSERT INTO categorias (nombre) VALUES ('Bebidas'), ('Platos'), ('Postres')
