@@ -35,18 +35,31 @@ public partial class FrmVentas : BasePage
 
     private readonly ComboBox cboVentasPendientes = new()
     {
-        Width = 250,
+        Width = 210,
         DropDownStyle = ComboBoxStyle.DropDownList
     };
-    private readonly ComboBox cboProductos = new()
+    private readonly TextBox txtBuscarProducto = new()
     {
-        Width = 220,
-        DropDownStyle = ComboBoxStyle.DropDownList
+        Width = 210,
+        BorderStyle = BorderStyle.FixedSingle
     };
     private readonly NumericUpDown numCantidad = new() { Width = 72, Minimum = 1, Maximum = 100000 };
+    private readonly DataGridView gridProductos = new() { Dock = DockStyle.Top, Height = 72, AutoGenerateColumns = true };
+    private readonly Label lblSinResultados = new()
+    {
+        Dock = DockStyle.Top,
+        Height = 26,
+        ForeColor = Theme.TextSecondary,
+        TextAlign = ContentAlignment.MiddleLeft,
+        Visible = false
+    };
     private readonly DataGridView gridLineas = new() { Dock = DockStyle.Fill, AutoGenerateColumns = true };
     private readonly Button btnAgregarLinea = new() { Text = "Agregar producto", AutoSize = true };
     private readonly Button btnQuitarLinea = new() { Text = "Quitar línea", AutoSize = true, Enabled = false };
+    private readonly ComboBox cboMedioPago = new() { Width = 145, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly TextBox txtNotas = new() { Width = 180, MaxLength = 500 };
+    private readonly Button btnCerrarVenta = new() { Text = "Cerrar venta", AutoSize = true, Enabled = false };
+    private readonly Button btnAnularVenta = new() { Text = "Anular venta", AutoSize = true, Enabled = false };
     private readonly Label lblTotal = new()
     {
         AutoSize = true,
@@ -55,6 +68,7 @@ public partial class FrmVentas : BasePage
         Padding = new Padding(8, 8, 16, 0),
         Text = "Total: $0,00"
     };
+    private List<Producto> productosActivos = [];
 
     public FrmVentas() : this(null) { }
 
@@ -78,8 +92,11 @@ public partial class FrmVentas : BasePage
 
     private TipoVenta TipoSeleccionado => ((TipoVentaOpcion)cboTipoVenta.SelectedItem!).Tipo;
     private VentaPendiente? VentaSeleccionada => cboVentasPendientes.SelectedItem as VentaPendiente;
-    private Producto? ProductoSeleccionado => cboProductos.SelectedItem as Producto;
+    private Producto? ProductoSeleccionado => gridProductos.SelectedRows.Count == 0
+        ? null
+        : gridProductos.SelectedRows[0].DataBoundItem as Producto;
     private DetalleVenta? LineaSeleccionada => gridLineas.CurrentRow?.DataBoundItem as DetalleVenta;
+    private MedioPago? MedioPagoSeleccionado => (cboMedioPago.SelectedItem as MedioPagoOpcion)?.Medio;
 
     private void ConstruirPestanaApertura()
     {
@@ -139,18 +156,18 @@ public partial class FrmVentas : BasePage
             BackColor = Theme.DeepCharcoal,
             Padding = new Padding(0, 8, 0, 8)
         };
-        barra.Controls.Add(CrearEtiqueta("Venta pendiente"));
+        barra.Controls.Add(CrearEtiqueta("Venta"));
         cboVentasPendientes.SelectedIndexChanged += VentaPendienteSeleccionada;
         cboVentasPendientes.BackColor = Theme.Surface;
         cboVentasPendientes.ForeColor = Theme.TextPrimary;
         barra.Controls.Add(cboVentasPendientes);
 
-        barra.Controls.Add(CrearEtiqueta("Producto"));
-        cboProductos.DisplayMember = nameof(Producto.Nombre);
-        cboProductos.SelectedIndexChanged += (_, _) => ActualizarEstadoBotones();
-        cboProductos.BackColor = Theme.Surface;
-        cboProductos.ForeColor = Theme.TextPrimary;
-        barra.Controls.Add(cboProductos);
+        txtBuscarProducto.PlaceholderText = "Buscar por código o nombre";
+        txtBuscarProducto.AccessibleName = "Buscar productos por código o nombre";
+        txtBuscarProducto.BackColor = Theme.Surface;
+        txtBuscarProducto.ForeColor = Theme.TextPrimary;
+        txtBuscarProducto.TextChanged += (_, _) => FiltrarProductos();
+        barra.Controls.Add(txtBuscarProducto);
 
         barra.Controls.Add(CrearEtiqueta("Cantidad"));
         numCantidad.BackColor = Theme.Surface;
@@ -162,6 +179,14 @@ public partial class FrmVentas : BasePage
         btnAgregarLinea.Enabled = false;
         btnAgregarLinea.Click += (_, _) => AgregarLinea();
         barra.Controls.Add(btnAgregarLinea);
+
+        Theme.StyleGrid(gridProductos);
+        gridProductos.SelectionChanged += (_, _) => ActualizarEstadoBotones();
+
+        var panelBusqueda = new Panel { Dock = DockStyle.Top, Height = 188, BackColor = Theme.DeepCharcoal };
+        panelBusqueda.Controls.Add(lblSinResultados);
+        panelBusqueda.Controls.Add(gridProductos);
+        panelBusqueda.Controls.Add(barra);
 
         var pie = new FlowLayoutPanel
         {
@@ -175,6 +200,29 @@ public partial class FrmVentas : BasePage
         btnQuitarLinea.Enabled = false;
         btnQuitarLinea.Click += (_, _) => QuitarLinea();
         pie.Controls.Add(btnQuitarLinea);
+        pie.Controls.Add(CrearEtiqueta("Medio de pago"));
+        cboMedioPago.Items.AddRange(new object[]
+        {
+            new MedioPagoOpcion(MedioPago.Efectivo, "Efectivo"),
+            new MedioPagoOpcion(MedioPago.Transferencia, "Transferencia")
+        });
+        cboMedioPago.SelectedIndexChanged += (_, _) => ActualizarEstadoBotones();
+        cboMedioPago.BackColor = Theme.Surface;
+        cboMedioPago.ForeColor = Theme.TextPrimary;
+        pie.Controls.Add(cboMedioPago);
+        pie.Controls.Add(CrearEtiqueta("Notas"));
+        txtNotas.PlaceholderText = "Propina, descuento, pago dividido...";
+        txtNotas.BackColor = Theme.Surface;
+        txtNotas.ForeColor = Theme.TextPrimary;
+        pie.Controls.Add(txtNotas);
+        EstilizarBoton(btnCerrarVenta, primario: true);
+        btnCerrarVenta.Enabled = false;
+        btnCerrarVenta.Click += (_, _) => CerrarVenta();
+        pie.Controls.Add(btnCerrarVenta);
+        EstilizarBoton(btnAnularVenta, primario: false);
+        btnAnularVenta.Enabled = false;
+        btnAnularVenta.Click += (_, _) => AnularVenta();
+        pie.Controls.Add(btnAnularVenta);
         pie.Controls.Add(lblTotal);
 
         Theme.StyleGrid(gridLineas);
@@ -182,7 +230,7 @@ public partial class FrmVentas : BasePage
 
         pestañaDetalle.Controls.Add(gridLineas);
         pestañaDetalle.Controls.Add(pie);
-        pestañaDetalle.Controls.Add(barra);
+        pestañaDetalle.Controls.Add(panelBusqueda);
     }
 
     private static Label CrearEtiqueta(string texto) => new()
@@ -226,6 +274,8 @@ public partial class FrmVentas : BasePage
         btnAbrirVenta.Enabled = usuario is not null && (!esMesa || mesa is not null && !mesa.Ocupada);
         btnAgregarLinea.Enabled = VentaSeleccionada is not null && ProductoSeleccionado is not null && numCantidad.Value > 0;
         btnQuitarLinea.Enabled = VentaSeleccionada is not null && LineaSeleccionada is not null;
+        btnCerrarVenta.Enabled = VentaSeleccionada is not null && MedioPagoSeleccionado is not null;
+        btnAnularVenta.Enabled = VentaSeleccionada is not null;
     }
 
     private void CargarMesas()
@@ -251,17 +301,47 @@ public partial class FrmVentas : BasePage
     {
         try
         {
-            var productos = productoRepositorio.GetAll().Where(p => p.Activo).ToList();
-            cboProductos.DataSource = null;
-            cboProductos.DisplayMember = nameof(Producto.Nombre);
-            cboProductos.DataSource = productos;
-            ActualizarEstadoBotones();
+            productosActivos = productoRepositorio.GetAll().Where(p => p.Activo).ToList();
+            txtBuscarProducto.Clear();
+            FiltrarProductos();
         }
         catch (Exception ex)
         {
             MessageBox.Show("No se pudieron cargar los productos. Revisá la conexión a la base de datos.\n" + ex.Message,
                 "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+
+    private void FiltrarProductos()
+    {
+        string busqueda = txtBuscarProducto.Text.Trim();
+        List<Producto> resultados = productosActivos
+            .Where(p => string.IsNullOrEmpty(busqueda)
+                || p.Nombre.Contains(busqueda, StringComparison.CurrentCultureIgnoreCase)
+                || p.Codigo.ToString().Contains(busqueda, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(p => p.Nombre)
+            .ToList();
+
+        gridProductos.DataSource = resultados;
+        if (gridProductos.Columns[nameof(Producto.Codigo)] is { } codigo) codigo.HeaderText = "Código";
+        if (gridProductos.Columns[nameof(Producto.Nombre)] is { } nombre) nombre.HeaderText = "Producto";
+        if (gridProductos.Columns[nameof(Producto.Precio)] is { } precio)
+        {
+            precio.HeaderText = "Precio";
+            precio.DefaultCellStyle.Format = "C2";
+        }
+        foreach (string columna in new[]
+        {
+            nameof(Producto.TipoStock), nameof(Producto.Stock), nameof(Producto.StockMinimo),
+            nameof(Producto.StockDisponible), nameof(Producto.Activo), nameof(Producto.CategoriaId),
+            nameof(Producto.CategoriaNombre)
+        })
+            if (gridProductos.Columns[columna] is { } oculta) oculta.Visible = false;
+
+        gridProductos.ClearSelection();
+        lblSinResultados.Visible = resultados.Count == 0;
+        lblSinResultados.Text = "No se encontraron productos.";
+        ActualizarEstadoBotones();
     }
 
     private void CargarVentasPendientes(int? ventaIdSeleccionada = null)
@@ -405,10 +485,86 @@ public partial class FrmVentas : BasePage
         }
     }
 
+    private void CerrarVenta()
+    {
+        VentaPendiente? venta = VentaSeleccionada;
+        MedioPago? medioPago = MedioPagoSeleccionado;
+        if (venta is null) return;
+        if (medioPago is null)
+        {
+            MessageBox.Show("Elegí un medio de pago para cerrar la venta.", "Falta el medio de pago",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        try
+        {
+            repositorio.Cerrar(venta.Id, medioPago.Value, txtNotas.Text);
+            MessageBox.Show($"La venta #{venta.Id} quedó cerrada y ya no se puede editar.", "Venta cerrada",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            txtNotas.Clear();
+            cboMedioPago.SelectedIndex = -1;
+            CargarVentasPendientes();
+            CargarMesas();
+        }
+        catch (InvalidOperationException ex)
+        {
+            MessageBox.Show(ex.Message, "No se pudo cerrar la venta", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            CargarVentasPendientes(venta.Id);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("No se pudo cerrar la venta.\n" + ex.Message,
+                "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void AnularVenta()
+    {
+        VentaPendiente? venta = VentaSeleccionada;
+        if (venta is null) return;
+
+        DialogResult confirmacion = MessageBox.Show(
+            "¿Anular la venta? Se devolverá el stock",
+            "Confirmar anulación",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning);
+        if (confirmacion != DialogResult.Yes) return;
+
+        try
+        {
+            repositorio.Anular(venta.Id);
+            MessageBox.Show($"La venta #{venta.Id} quedó anulada.", "Venta anulada",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CargarProductos();
+            CargarVentasPendientes();
+            CargarMesas();
+        }
+        catch (InvalidOperationException ex)
+        {
+            MessageBox.Show(ex.Message, "No se pudo anular la venta", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            CargarVentasPendientes(venta.Id);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("No se pudo anular la venta.\n" + ex.Message,
+                "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
     private sealed record TipoVentaOpcion(TipoVenta Tipo, string Texto)
     {
         public override string ToString() => Texto;
     }
 
-    private void VentaPendienteSeleccionada(object? sender, EventArgs e) => CargarLineasSeleccionadas();
+    private sealed record MedioPagoOpcion(MedioPago Medio, string Texto)
+    {
+        public override string ToString() => Texto;
+    }
+
+    private void VentaPendienteSeleccionada(object? sender, EventArgs e)
+    {
+        cboMedioPago.SelectedIndex = -1;
+        CargarLineasSeleccionadas();
+    }
 }

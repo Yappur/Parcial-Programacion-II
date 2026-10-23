@@ -120,9 +120,11 @@ WHERE id = @ventaId AND estado = 'PENDIENTE';
 
 **5. Anular** (transacción)
 
+Solo se anula una venta `PENDIENTE`. Una venta `CERRADA` no se puede anular.
+
 1. Leer todas las líneas de la venta.
 2. Devolver el stock de cada una.
-3. `UPDATE ventas SET estado = 'ANULADA' WHERE id = @ventaId`.
+3. `UPDATE ventas SET estado = 'ANULADA' WHERE id = @ventaId AND estado = 'PENDIENTE'`.
 
 Una venta `ANULADA` no cuenta en ningún reporte de recaudación.
 

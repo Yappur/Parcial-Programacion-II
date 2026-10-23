@@ -35,6 +35,7 @@ Si el código o una petición contradicen estas reglas, avisar al usuario antes 
 ## Ventas
 
 - Las ventas de mesa quedan `PENDIENTE`. Se les pueden agregar más productos mientras la mesa sigue ocupada, y pasan a `CERRADA` solo cuando se paga.
+- Solo se pueden cerrar o anular ventas `PENDIENTE`. Una venta `CERRADA` no se puede editar ni anular.
 - **El precio se congela en la venta**: `detalle_venta.precio_unitario` guarda el precio al momento de vender, así cambiar el precio del producto no altera el historial.
 - **Pagos divididos y excepciones**: no hay tabla de pagos. La venta tiene una columna `notas` para registrar cualquier excepción (pago dividido, propina, descuento acordado, etc.). El `medio_pago` se guarda tal cual lo que predomine; el detalle va en `notas`.
 - **"Mesa ocupada"** se deduce de si tiene una venta `PENDIENTE`; no se guarda como estado en `mesas`. Solo puede haber una venta `PENDIENTE` por mesa.
@@ -45,7 +46,7 @@ Si el código o una petición contradicen estas reglas, avisar al usuario antes 
 | Estado | Cómo se llega | Qué se puede hacer | Cuenta en recaudación |
 |---|---|---|---|
 | `PENDIENTE` | Al abrir la venta | Agregar líneas, quitar líneas, cerrar, anular | No |
-| `CERRADA` | Al pagar | Nada: una venta cerrada ya no se edita | Sí |
+| `CERRADA` | Al pagar | No se puede editar ni anular | Sí |
 | `ANULADA` | Al anular (se devuelve el stock de todas sus líneas) | Nada | No |
 
 Los pasos de cada operación, con su SQL, están en `flujos-y-reportes.md`.
@@ -73,6 +74,5 @@ Estos puntos pueden cambiar el diseño. Si el usuario trae respuestas de la entr
 
 No son reglas: son preguntas que ninguno de los documentos de origen resolvía. Decidirlas con el equipo y, cuando se decida, pasar la respuesta a la sección que corresponda.
 
-1. **¿Se puede anular una venta `CERRADA`?** Los documentos solo definen la anulación y que una venta cerrada no se edita; no dicen si se anula después de cobrada.
-2. **Receta modificada con ventas `PENDIENTE`.** Para quitar una línea se decidió devolver el stock de un producto `POR_RECETA` según la receta *vigente*. Se acepta que, si cambió desde que se agregó la línea, la cantidad devuelta puede diferir de la descontada. Si ya no existe una receta vigente, no se quita la línea y no se modifica el stock. La regla equivalente para anular una venta queda pendiente de decidir.
-3. **Mesas "Reservada".** El diseño anterior pensaba un estado Libre/Ocupada/Reservada en `mesas`. El diseño vigente deduce "ocupada" de la venta `PENDIENTE` y no tiene reservas. Si la clienta las necesita, cambia el diseño de `mesas`.
+1. **Receta modificada con ventas `PENDIENTE`.** Al quitar una línea o anular una venta, se devuelve el stock de los productos `POR_RECETA` según la receta *vigente*. Se acepta que, si cambió desde que se agregó la línea, la cantidad devuelta puede diferir de la descontada. Si ya no existe una receta vigente, se cancela toda la operación y no se modifica el stock ni el detalle.
+2. **Mesas "Reservada".** El diseño anterior pensaba un estado Libre/Ocupada/Reservada en `mesas`. El diseño vigente deduce "ocupada" de la venta `PENDIENTE` y no tiene reservas. Si la clienta las necesita, cambia el diseño de `mesas`.

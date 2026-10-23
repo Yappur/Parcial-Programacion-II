@@ -177,6 +177,104 @@ internal sealed class VentaRepositorio
         }
     }
 
+    public void Cerrar(int ventaId, MedioPago medioPago, string? notas)
+    {
+        if (ventaId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(ventaId), "Elegí una venta pendiente.");
+        if (notas?.Length > 500)
+            throw new ArgumentException("Las notas no pueden superar los 500 caracteres.", nameof(notas));
+
+        string medioPagoDb = medioPago.ADb();
+        using var cn = Database.OpenConnection();
+        using var tx = cn.BeginTransaction();
+        try
+        {
+            ValidarVentaPendiente(cn, tx, ventaId);
+            using var cmd = new MySqlCommand("""
+                UPDATE ventas
+                SET estado = 'CERRADA', medio_pago = @medioPago,
+                    fecha_cierre = NOW(), notas = @notas
+                WHERE id = @ventaId AND estado = 'PENDIENTE';
+                """, cn, tx);
+            cmd.Parameters.AddWithValue("@medioPago", medioPagoDb);
+            cmd.Parameters.AddWithValue("@notas", string.IsNullOrWhiteSpace(notas) ? DBNull.Value : notas.Trim());
+            cmd.Parameters.AddWithValue("@ventaId", ventaId);
+            if (cmd.ExecuteNonQuery() == 0)
+                throw new InvalidOperationException("La venta ya no está pendiente y no se puede cerrar.");
+
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+
+    public void Anular(int ventaId)
+    {
+        if (ventaId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(ventaId), "Elegí una venta pendiente.");
+
+        using var cn = Database.OpenConnection();
+        using var tx = cn.BeginTransaction();
+        try
+        {
+            ValidarVentaPendiente(cn, tx, ventaId);
+            var lineas = new List<(int ProductoCodigo, int Cantidad)>();
+            using (var cmd = new MySqlCommand("""
+                SELECT producto_codigo, cantidad
+                FROM detalle_venta
+                WHERE venta_id = @ventaId
+                ORDER BY id
+                FOR UPDATE;
+                """, cn, tx))
+            {
+                cmd.Parameters.AddWithValue("@ventaId", ventaId);
+                using var rd = cmd.ExecuteReader();
+                while (rd.Read())
+                    lineas.Add((rd.GetInt32("producto_codigo"), rd.GetInt32("cantidad")));
+            }
+
+            foreach (var linea in lineas)
+            {
+                ProductoVenta producto = LeerProductoParaVenta(
+                    cn, tx, linea.ProductoCodigo, exigirActivo: false);
+                if (producto.TipoStock == TipoStock.Directo)
+                {
+                    using var devolver = new MySqlCommand("""
+                        UPDATE productos SET stock = stock + @cantidad WHERE codigo = @codigo;
+                        """, cn, tx);
+                    devolver.Parameters.AddWithValue("@cantidad", linea.Cantidad);
+                    devolver.Parameters.AddWithValue("@codigo", linea.ProductoCodigo);
+                    if (devolver.ExecuteNonQuery() == 0)
+                        throw new InvalidOperationException($"No se pudo devolver el stock de {producto.Nombre}.");
+                }
+                else
+                {
+                    DevolverIngredientesVigentes(cn, tx, producto, linea.Cantidad);
+                }
+            }
+
+            using (var cmd = new MySqlCommand("""
+                UPDATE ventas SET estado = 'ANULADA'
+                WHERE id = @ventaId AND estado = 'PENDIENTE';
+                """, cn, tx))
+            {
+                cmd.Parameters.AddWithValue("@ventaId", ventaId);
+                if (cmd.ExecuteNonQuery() == 0)
+                    throw new InvalidOperationException("La venta ya no está pendiente y no se puede anular.");
+            }
+
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+
     public List<MesaVenta> ListarMesasConEstado()
     {
         using var cn = Database.OpenConnection();
