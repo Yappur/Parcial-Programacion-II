@@ -66,6 +66,53 @@ internal sealed class VentaRepositorio
         return lineas;
     }
 
+    public List<VentaHistorial> ListarHistorial(DateTime desde, DateTime hasta, EstadoVenta? estado)
+    {
+        if (desde.Date > hasta.Date)
+            throw new ArgumentException("La fecha desde no puede ser posterior a la fecha hasta.");
+
+        DateTime hastaExclusivo = hasta.Date.AddDays(1);
+        using var cn = Database.OpenConnection();
+        using var cmd = new MySqlCommand("""
+            SELECT v.id, v.fecha_hora, v.fecha_cierre, v.tipo_venta, m.numero AS mesa,
+                   u.nombre_completo AS atendio, v.total, v.medio_pago, v.estado, v.notas
+            FROM ventas v
+            LEFT JOIN mesas m ON m.id = v.mesa_id
+            JOIN usuarios u ON u.id = v.usuario_id
+            WHERE v.fecha_hora >= @desde
+              AND v.fecha_hora < @hasta
+              AND (@estado IS NULL OR v.estado = @estado)
+            ORDER BY v.fecha_hora DESC;
+            """, cn);
+        cmd.Parameters.AddWithValue("@desde", desde.Date);
+        cmd.Parameters.AddWithValue("@hasta", hastaExclusivo);
+        cmd.Parameters.AddWithValue("@estado", estado is null ? DBNull.Value : estado.Value.ADb());
+
+        using var rd = cmd.ExecuteReader();
+        var ventas = new List<VentaHistorial>();
+        while (rd.Read())
+        {
+            ventas.Add(new VentaHistorial
+            {
+                Id = rd.GetInt32("id"),
+                FechaHora = rd.GetDateTime("fecha_hora"),
+                FechaCierre = rd.IsDBNull(rd.GetOrdinal("fecha_cierre"))
+                    ? null
+                    : rd.GetDateTime("fecha_cierre"),
+                TipoVenta = rd.GetString("tipo_venta"),
+                Mesa = rd.IsDBNull(rd.GetOrdinal("mesa")) ? null : rd.GetInt32("mesa"),
+                Atendio = rd.GetString("atendio"),
+                Total = rd.GetDecimal("total"),
+                MedioPago = rd.IsDBNull(rd.GetOrdinal("medio_pago"))
+                    ? null
+                    : rd.GetString("medio_pago"),
+                Estado = rd.GetString("estado"),
+                Notas = rd.IsDBNull(rd.GetOrdinal("notas")) ? null : rd.GetString("notas")
+            });
+        }
+        return ventas;
+    }
+
     public void AgregarLinea(int ventaId, int productoCodigo, int cantidad)
     {
         if (ventaId <= 0)

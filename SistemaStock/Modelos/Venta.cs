@@ -34,6 +34,20 @@ public sealed class Venta
     public string? Notas { get; set; }
 }
 
+public sealed class VentaHistorial
+{
+    public int Id { get; set; }
+    public DateTime FechaHora { get; set; }
+    public DateTime? FechaCierre { get; set; }
+    public string TipoVenta { get; set; } = "";
+    public int? Mesa { get; set; }
+    public string Atendio { get; set; } = "";
+    public decimal Total { get; set; }
+    public string? MedioPago { get; set; }
+    public string Estado { get; set; } = "";
+    public string? Notas { get; set; }
+}
+
 public sealed class DetalleVenta
 {
     public int Id { get; set; }

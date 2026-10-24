@@ -12,7 +12,8 @@ public enum PaginaApp
     Recetas,
     Mesas,
     Usuarios,
-    Ventas
+    Ventas,
+    HistorialVentas
 }
 
 /// <summary>Ventana principal única: conserva el sidebar y aloja una página a la vez.</summary>
@@ -61,7 +62,7 @@ public class BaseFormSidebar : BaseForm
         var navegacion = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown,
-            WrapContents = false, BackColor = Theme.ObsidianBlack
+            WrapContents = false, AutoScroll = true, BackColor = Theme.ObsidianBlack
         };
         layout.Controls.Add(navegacion, 0, 1);
         navegacion.Controls.Add(CrearBoton("Dashboard", PaginaApp.Dashboard));
@@ -71,6 +72,8 @@ public class BaseFormSidebar : BaseForm
         navegacion.Controls.Add(CrearBoton("Mesas", PaginaApp.Mesas));
         navegacion.Controls.Add(CrearBoton("Usuarios", PaginaApp.Usuarios));
         navegacion.Controls.Add(CrearBoton("Ventas", PaginaApp.Ventas));
+        if (UserPermissions.CanManageUsers(usuarioActual))
+            navegacion.Controls.Add(CrearBoton("Historial de ventas", PaginaApp.HistorialVentas));
 
         var cerrarSesion = new Button
         {
@@ -103,6 +106,9 @@ public class BaseFormSidebar : BaseForm
 
     protected void Navegar(PaginaApp destino)
     {
+        if (destino == PaginaApp.HistorialVentas && !UserPermissions.CanManageUsers(usuarioActual))
+            return;
+
         if (paginaActiva == destino)
             return;
 
@@ -115,6 +121,7 @@ public class BaseFormSidebar : BaseForm
             PaginaApp.Mesas => new FrmMesas(usuarioActual),
             PaginaApp.Usuarios => new FrmUsers(usuarioActual),
             PaginaApp.Ventas => new FrmVentas(usuarioActual),
+            PaginaApp.HistorialVentas => new FrmHistorialVentas(usuarioActual),
             _ => throw new ArgumentOutOfRangeException(nameof(destino))
         };
 
