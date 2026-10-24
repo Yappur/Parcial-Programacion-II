@@ -5,6 +5,14 @@ namespace SistemaStock.Datos;
 
 internal sealed class VentaRepositorio
 {
+    public DateTime FechaMinimaVenta()
+    {
+        using var cn = Database.OpenConnection();
+        using var cmd = new MySqlCommand("SELECT MIN(fecha_hora) FROM ventas;", cn);
+        object? valor = cmd.ExecuteScalar();
+        return valor is null || valor == DBNull.Value ? DateTime.Today : Convert.ToDateTime(valor);
+    }
+
     public List<VentaPendiente> ListarPendientes()
     {
         using var cn = Database.OpenConnection();
@@ -30,7 +38,7 @@ internal sealed class VentaRepositorio
             {
                 Id = rd.GetInt32("id"),
                 Total = rd.GetDecimal("total"),
-                Descripcion = $"Venta #{rd.GetInt32("id")} · {tipoTexto} · {rd.GetDecimal("total"):C2}"
+                Descripcion = $"Venta #{rd.GetInt32("id")} - {tipoTexto} - {rd.GetDecimal("total"):C2}"
             });
         }
         return ventas;

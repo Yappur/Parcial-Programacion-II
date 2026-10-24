@@ -13,8 +13,6 @@ public sealed class FrmHistorialVentas : BasePage
     private readonly DateTimePicker fechaDesde = new()
     {
         Format = DateTimePickerFormat.Short,
-        MinDate = new DateTime(2000, 1, 1),
-        Value = new DateTime(2000, 1, 1),
         Width = 125
     };
     private readonly DateTimePicker fechaHasta = new()
@@ -31,6 +29,7 @@ public sealed class FrmHistorialVentas : BasePage
     {
         Dock = DockStyle.Top,
         Height = 34,
+        BackColor = Theme.DeepCharcoal,
         ForeColor = Theme.TextSecondary,
         TextAlign = ContentAlignment.MiddleLeft
     };
@@ -41,7 +40,18 @@ public sealed class FrmHistorialVentas : BasePage
             throw new UnauthorizedAccessException("El historial de ventas es exclusivo para Administrador.");
 
         AddPageTitle("Historial de ventas", "Consulta de solo lectura. Los importes corresponden al momento de la venta.");
+        DateTime fechaMinima;
+        try { fechaMinima = repositorio.FechaMinimaVenta().Date; }
+        catch { fechaMinima = DateTime.Today; }
+        if (fechaMinima < DateTimePicker.MinimumDateTime)
+            fechaMinima = DateTimePicker.MinimumDateTime;
+        fechaDesde.MinDate = fechaMinima;
+        fechaDesde.Value = fechaMinima;
         fechaHasta.Value = DateTime.Today;
+        fechaDesde.BackColor = Theme.Surface;
+        fechaDesde.ForeColor = Theme.TextPrimary;
+        fechaHasta.BackColor = Theme.Surface;
+        fechaHasta.ForeColor = Theme.TextPrimary;
         ConstruirInterfaz();
         CargarVentas();
     }
@@ -54,7 +64,7 @@ public sealed class FrmHistorialVentas : BasePage
             AutoSize = true,
             WrapContents = true,
             BackColor = Theme.DeepCharcoal,
-            Padding = new Padding(0, 4, 0, 10)
+            Padding = new Padding(16, 4, 16, 12)
         };
         filtros.Controls.Add(CrearEtiqueta("Desde"));
         filtros.Controls.Add(fechaDesde);
@@ -68,13 +78,13 @@ public sealed class FrmHistorialVentas : BasePage
             new EstadoFiltro(EstadoVenta.Cerrada, "Cerrada"),
             new EstadoFiltro(EstadoVenta.Anulada, "Anulada")
         });
-        cboEstado.SelectedIndex = 0;
+        cboEstado.SelectedIndex = 2;
         cboEstado.BackColor = Theme.Surface;
         cboEstado.ForeColor = Theme.TextPrimary;
         filtros.Controls.Add(cboEstado);
 
-        var btnFiltrar = new Button { Text = "Filtrar", AutoSize = true };
-        EstilizarBoton(btnFiltrar);
+        var btnFiltrar = new BotonTema { Text = "Filtrar", AutoSize = true, Height = 36 };
+        Theme.EstilizarBoton(btnFiltrar);
         btnFiltrar.Click += (_, _) => CargarVentas();
         filtros.Controls.Add(btnFiltrar);
 
@@ -94,10 +104,13 @@ public sealed class FrmHistorialVentas : BasePage
             SplitterDistance = 205,
             Panel1MinSize = 90,
             Panel2MinSize = 90,
-            BackColor = Theme.DeepCharcoal
+            BackColor = Theme.DeepCharcoal,
+            Padding = new Padding(12)
         };
         split.Panel1.Controls.Add(gridVentas);
+        split.Panel1.BackColor = Theme.DeepCharcoal;
         split.Panel2.Controls.Add(gridDetalle);
+        split.Panel2.BackColor = Theme.DeepCharcoal;
         split.Panel2.Controls.Add(lblDetalle);
 
         PageContent.Controls.Add(split);
@@ -162,7 +175,7 @@ public sealed class FrmHistorialVentas : BasePage
             ConfigurarColumnaDetalle(nameof(DetalleVenta.Cantidad), "Cantidad");
             ConfigurarColumnaDetalle(nameof(DetalleVenta.PrecioUnitario), "Precio unitario", "C2");
             ConfigurarColumnaDetalle(nameof(DetalleVenta.Subtotal), "Subtotal", "C2");
-            lblDetalle.Text = $"Venta #{venta.Id} · {venta.Estado} · Total de venta: {venta.Total:C2}";
+            lblDetalle.Text = $"Venta #{venta.Id} - {venta.Estado} - Total de venta: {venta.Total:C2}";
         }
         catch (Exception ex)
         {
@@ -192,16 +205,6 @@ public sealed class FrmHistorialVentas : BasePage
         ForeColor = Theme.TextPrimary,
         Padding = new Padding(0, 8, 4, 0)
     };
-
-    private static void EstilizarBoton(Button boton)
-    {
-        boton.FlatStyle = FlatStyle.Flat;
-        boton.FlatAppearance.BorderSize = 0;
-        boton.BackColor = Theme.BlazeOrange;
-        boton.ForeColor = Theme.TextPrimary;
-        boton.Font = Theme.BodyFont;
-        boton.Cursor = Cursors.Hand;
-    }
 
     private sealed record EstadoFiltro(EstadoVenta? Estado, string Texto)
     {

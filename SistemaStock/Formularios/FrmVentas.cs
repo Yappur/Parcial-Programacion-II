@@ -2,6 +2,7 @@ using SistemaStock.Datos;
 using SistemaStock.Estilos;
 using SistemaStock.Modelos;
 using SistemaStock.Modelos.Usuarios;
+using System.Globalization;
 
 namespace SistemaStock.Formularios;
 
@@ -11,9 +12,9 @@ public partial class FrmVentas : BasePage
     private readonly ProductoRepositorio productoRepositorio = new();
     private readonly User? usuario;
 
-    private readonly TabControl pestañas = new() { Dock = DockStyle.Fill };
+    private readonly TabControl pestañas = new() { Dock = DockStyle.Fill, BackColor = Theme.DeepCharcoal, ForeColor = Theme.TextPrimary };
     private readonly TabPage pestañaAbrir = new("Abrir venta");
-    private readonly TabPage pestañaDetalle = new("Agregar o quitar productos");
+    private readonly TabPage pestañaDetalle = new("Venta pendiente");
 
     private readonly ComboBox cboTipoVenta = new()
     {
@@ -25,7 +26,7 @@ public partial class FrmVentas : BasePage
         Dock = DockStyle.Fill,
         AutoGenerateColumns = true
     };
-    private readonly Button btnAbrirVenta = new() { Text = "Abrir venta", AutoSize = true };
+    private readonly BotonTema btnAbrirVenta = new() { Text = "Abrir venta", AutoSize = true, Height = 36 };
     private readonly Label lblAyudaMesas = new()
     {
         AutoSize = true,
@@ -38,37 +39,40 @@ public partial class FrmVentas : BasePage
         Width = 210,
         DropDownStyle = ComboBoxStyle.DropDownList
     };
-    private readonly TextBox txtBuscarProducto = new()
+    private readonly ComboBox cboProducto = new()
     {
-        Width = 210,
-        BorderStyle = BorderStyle.FixedSingle
+        Width = 190,
+        DropDownWidth = 460,
+        DropDownStyle = ComboBoxStyle.DropDown,
+        AutoCompleteMode = AutoCompleteMode.SuggestAppend,
+        AutoCompleteSource = AutoCompleteSource.ListItems
     };
-    private readonly NumericUpDown numCantidad = new() { Width = 72, Minimum = 1, Maximum = 100000 };
-    private readonly DataGridView gridProductos = new() { Dock = DockStyle.Top, Height = 72, AutoGenerateColumns = true };
+    private readonly NumericUpDown numCantidad = new() { Width = 60, Minimum = 1, Maximum = 100000 };
     private readonly Label lblSinResultados = new()
     {
-        Dock = DockStyle.Top,
-        Height = 26,
+        AutoSize = true,
         ForeColor = Theme.TextSecondary,
         TextAlign = ContentAlignment.MiddleLeft,
         Visible = false
     };
     private readonly DataGridView gridLineas = new() { Dock = DockStyle.Fill, AutoGenerateColumns = true };
-    private readonly Button btnAgregarLinea = new() { Text = "Agregar producto", AutoSize = true };
-    private readonly Button btnQuitarLinea = new() { Text = "Quitar línea", AutoSize = true, Enabled = false };
+    private readonly BotonTema btnAgregarLinea = new() { Text = "Agregar producto", AutoSize = true, Height = 36 };
+    private readonly BotonTema btnQuitarLinea = new() { Text = "Quitar producto seleccionado", AutoSize = true, Height = 36, Enabled = false };
     private readonly ComboBox cboMedioPago = new() { Width = 145, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly TextBox txtNotas = new() { Width = 180, MaxLength = 500 };
-    private readonly Button btnCerrarVenta = new() { Text = "Cerrar venta", AutoSize = true, Enabled = false };
-    private readonly Button btnAnularVenta = new() { Text = "Anular venta", AutoSize = true, Enabled = false };
-    private readonly Label lblTotal = new()
+    private readonly BotonTema btnCerrarVenta = new() { Text = "Cerrar venta", AutoSize = true, Height = 36, Enabled = false };
+    private readonly BotonTema btnAnularVenta = new() { Text = "Anular venta", AutoSize = true, Height = 36, Enabled = false };
+    private readonly Label lblEncabezadoVenta = new()
     {
-        AutoSize = true,
-        Font = new Font(Theme.BodyFont, FontStyle.Bold),
+        Dock = DockStyle.Fill,
+        AutoEllipsis = true,
+        Font = new Font(Theme.BodyFont.FontFamily, 16F, FontStyle.Bold),
         ForeColor = Theme.TextPrimary,
-        Padding = new Padding(8, 8, 16, 0),
-        Text = "Total: $0,00"
+        TextAlign = ContentAlignment.MiddleLeft,
+        Text = "Venta pendiente - Total: $0,00"
     };
     private List<Producto> productosActivos = [];
+    private bool actualizandoListaProductos;
 
     public FrmVentas() : this(null) { }
 
@@ -92,10 +96,10 @@ public partial class FrmVentas : BasePage
 
     private TipoVenta TipoSeleccionado => ((TipoVentaOpcion)cboTipoVenta.SelectedItem!).Tipo;
     private VentaPendiente? VentaSeleccionada => cboVentasPendientes.SelectedItem as VentaPendiente;
-    private Producto? ProductoSeleccionado => gridProductos.SelectedRows.Count == 0
+    private Producto? ProductoSeleccionado => (cboProducto.SelectedItem as ProductoOpcion)?.Producto;
+    private DetalleVenta? LineaSeleccionada => gridLineas.SelectedRows.Count == 0
         ? null
-        : gridProductos.SelectedRows[0].DataBoundItem as Producto;
-    private DetalleVenta? LineaSeleccionada => gridLineas.CurrentRow?.DataBoundItem as DetalleVenta;
+        : gridLineas.SelectedRows[0].DataBoundItem as DetalleVenta;
     private MedioPago? MedioPagoSeleccionado => (cboMedioPago.SelectedItem as MedioPagoOpcion)?.Medio;
 
     private void ConstruirPestanaApertura()
@@ -127,20 +131,17 @@ public partial class FrmVentas : BasePage
         cboTipoVenta.ForeColor = Theme.TextPrimary;
         cboTipoVenta.SelectedIndexChanged += (_, _) => ActualizarTipoVenta();
         barra.Controls.Add(cboTipoVenta);
-        EstilizarBoton(btnAbrirVenta, primario: true);
+        Theme.EstilizarBoton(btnAbrirVenta);
         btnAbrirVenta.Click += (_, _) => AbrirVenta();
         barra.Controls.Add(btnAbrirVenta);
         barra.Controls.Add(lblAyudaMesas);
 
         Theme.StyleGrid(gridMesas);
         gridMesas.SelectionChanged += (_, _) => ActualizarEstadoBotones();
-        gridMesas.CellFormatting += (_, e) =>
-        {
-            if (e.RowIndex < 0 || gridMesas.Columns[e.ColumnIndex].DataPropertyName != nameof(MesaVenta.Estado))
-                return;
-            if (e.Value is string estado)
-                e.CellStyle.ForeColor = estado == "Ocupada" ? Theme.TextSecondary : Theme.TextPrimary;
-        };
+        pestañaAbrir.BackColor = Theme.DeepCharcoal;
+        pestañaAbrir.UseVisualStyleBackColor = false;
+        pestañaDetalle.BackColor = Theme.DeepCharcoal;
+        pestañaDetalle.UseVisualStyleBackColor = false;
 
         pestañaAbrir.Controls.Add(gridMesas);
         pestañaAbrir.Controls.Add(barra);
@@ -148,45 +149,91 @@ public partial class FrmVentas : BasePage
 
     private void ConstruirPestanaDetalle()
     {
-        var barra = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Top,
-            AutoSize = true,
-            WrapContents = true,
-            BackColor = Theme.DeepCharcoal,
-            Padding = new Padding(0, 8, 0, 8)
-        };
-        barra.Controls.Add(CrearEtiqueta("Venta"));
+        cboVentasPendientes.Width = 260;
+        cboVentasPendientes.DropDownStyle = ComboBoxStyle.DropDownList;
         cboVentasPendientes.SelectedIndexChanged += VentaPendienteSeleccionada;
         cboVentasPendientes.BackColor = Theme.Surface;
         cboVentasPendientes.ForeColor = Theme.TextPrimary;
-        barra.Controls.Add(cboVentasPendientes);
+        cboVentasPendientes.Margin = new Padding(4, 3, 12, 3);
 
-        txtBuscarProducto.PlaceholderText = "Buscar por código o nombre";
-        txtBuscarProducto.AccessibleName = "Buscar productos por código o nombre";
-        txtBuscarProducto.BackColor = Theme.Surface;
-        txtBuscarProducto.ForeColor = Theme.TextPrimary;
-        txtBuscarProducto.TextChanged += (_, _) => FiltrarProductos();
-        barra.Controls.Add(txtBuscarProducto);
+        cboProducto.AccessibleName = "Buscar producto por código, nombre o precio";
+        cboProducto.AccessibleDescription = "Escribí parte del código, el nombre o el precio para filtrar productos.";
+        cboProducto.BackColor = Theme.Surface;
+        cboProducto.ForeColor = Theme.TextPrimary;
+        cboProducto.Font = Theme.BodyFont;
+        cboProducto.Margin = new Padding(4, 3, 10, 3);
+        cboProducto.TextUpdate += FiltrarProductos;
+        cboProducto.SelectedIndexChanged += (_, _) => ActualizarEstadoBotones();
 
-        barra.Controls.Add(CrearEtiqueta("Cantidad"));
         numCantidad.BackColor = Theme.Surface;
         numCantidad.ForeColor = Theme.TextPrimary;
         numCantidad.ValueChanged += (_, _) => ActualizarEstadoBotones();
-        barra.Controls.Add(numCantidad);
 
-        EstilizarBoton(btnAgregarLinea, primario: true);
+        Theme.EstilizarBoton(btnAgregarLinea);
         btnAgregarLinea.Enabled = false;
         btnAgregarLinea.Click += (_, _) => AgregarLinea();
-        barra.Controls.Add(btnAgregarLinea);
 
-        Theme.StyleGrid(gridProductos);
-        gridProductos.SelectionChanged += (_, _) => ActualizarEstadoBotones();
+        Theme.StyleGrid(gridLineas);
+        gridLineas.SelectionChanged += (_, _) => ActualizarEstadoBotones();
 
-        var panelBusqueda = new Panel { Dock = DockStyle.Top, Height = 188, BackColor = Theme.DeepCharcoal };
-        panelBusqueda.Controls.Add(lblSinResultados);
-        panelBusqueda.Controls.Add(gridProductos);
-        panelBusqueda.Controls.Add(barra);
+        var areaSuperior = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 164,
+            ColumnCount = 1,
+            RowCount = 5,
+            BackColor = Theme.DeepCharcoal,
+            Padding = new Padding(16, 8, 16, 8),
+            Margin = Padding.Empty
+        };
+        areaSuperior.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        areaSuperior.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+        areaSuperior.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+        areaSuperior.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+        areaSuperior.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+        areaSuperior.RowStyles.Add(new RowStyle(SizeType.Absolute, 20));
+        areaSuperior.Controls.Add(lblEncabezadoVenta, 0, 0);
+
+        var selectorVenta = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            WrapContents = false,
+            BackColor = Theme.DeepCharcoal,
+            Padding = Padding.Empty,
+            Margin = Padding.Empty
+        };
+        selectorVenta.Controls.Add(CrearEtiqueta("Venta pendiente"));
+        selectorVenta.Controls.Add(cboVentasPendientes);
+        areaSuperior.Controls.Add(selectorVenta, 0, 1);
+        areaSuperior.Controls.Add(CrearEtiqueta("Agregar producto"), 0, 2);
+
+        var barraProducto = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            WrapContents = true,
+            BackColor = Theme.DeepCharcoal,
+            Padding = Padding.Empty,
+            Margin = Padding.Empty
+        };
+        barraProducto.Controls.Add(cboProducto);
+        barraProducto.Controls.Add(CrearEtiqueta("Cantidad"));
+        barraProducto.Controls.Add(numCantidad);
+        barraProducto.Controls.Add(btnAgregarLinea);
+        areaSuperior.Controls.Add(barraProducto, 0, 3);
+        lblSinResultados.Text = "No se encontraron productos.";
+        areaSuperior.Controls.Add(lblSinResultados, 0, 4);
+
+        var panelTituloGrilla = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 32,
+            BackColor = Theme.DeepCharcoal,
+            Padding = new Padding(16, 2, 16, 2)
+        };
+        var tituloGrilla = CrearEtiqueta("Productos de la venta");
+        tituloGrilla.Dock = DockStyle.Fill;
+        tituloGrilla.Padding = Padding.Empty;
+        panelTituloGrilla.Controls.Add(tituloGrilla);
 
         var pie = new FlowLayoutPanel
         {
@@ -194,9 +241,9 @@ public partial class FrmVentas : BasePage
             AutoSize = true,
             WrapContents = true,
             BackColor = Theme.DeepCharcoal,
-            Padding = new Padding(0, 8, 0, 0)
+            Padding = new Padding(16, 8, 16, 0)
         };
-        EstilizarBoton(btnQuitarLinea, primario: false);
+        Theme.EstilizarBoton(btnQuitarLinea);
         btnQuitarLinea.Enabled = false;
         btnQuitarLinea.Click += (_, _) => QuitarLinea();
         pie.Controls.Add(btnQuitarLinea);
@@ -215,22 +262,18 @@ public partial class FrmVentas : BasePage
         txtNotas.BackColor = Theme.Surface;
         txtNotas.ForeColor = Theme.TextPrimary;
         pie.Controls.Add(txtNotas);
-        EstilizarBoton(btnCerrarVenta, primario: true);
+        Theme.EstilizarBoton(btnCerrarVenta);
         btnCerrarVenta.Enabled = false;
         btnCerrarVenta.Click += (_, _) => CerrarVenta();
         pie.Controls.Add(btnCerrarVenta);
-        EstilizarBoton(btnAnularVenta, primario: false);
+        Theme.EstilizarBoton(btnAnularVenta);
         btnAnularVenta.Enabled = false;
         btnAnularVenta.Click += (_, _) => AnularVenta();
         pie.Controls.Add(btnAnularVenta);
-        pie.Controls.Add(lblTotal);
-
-        Theme.StyleGrid(gridLineas);
-        gridLineas.SelectionChanged += (_, _) => ActualizarEstadoBotones();
-
         pestañaDetalle.Controls.Add(gridLineas);
+        pestañaDetalle.Controls.Add(panelTituloGrilla);
         pestañaDetalle.Controls.Add(pie);
-        pestañaDetalle.Controls.Add(panelBusqueda);
+        pestañaDetalle.Controls.Add(areaSuperior);
     }
 
     private static Label CrearEtiqueta(string texto) => new()
@@ -240,18 +283,6 @@ public partial class FrmVentas : BasePage
         ForeColor = Theme.TextPrimary,
         Padding = new Padding(0, 8, 4, 0)
     };
-
-    private static void EstilizarBoton(Button boton, bool primario)
-    {
-        boton.FlatStyle = FlatStyle.Flat;
-        boton.FlatAppearance.BorderSize = primario ? 0 : 1;
-        boton.BackColor = primario ? Theme.BlazeOrange : Theme.Surface;
-        boton.ForeColor = boton.Enabled ? Theme.TextPrimary : SystemColors.GrayText;
-        boton.Font = Theme.BodyFont;
-        boton.Cursor = Cursors.Hand;
-        boton.EnabledChanged += (_, _) =>
-            boton.ForeColor = boton.Enabled ? Theme.TextPrimary : SystemColors.GrayText;
-    }
 
     private void ActualizarTipoVenta()
     {
@@ -302,8 +333,8 @@ public partial class FrmVentas : BasePage
         try
         {
             productosActivos = productoRepositorio.GetAll().Where(p => p.Activo).ToList();
-            txtBuscarProducto.Clear();
-            FiltrarProductos();
+            cboProducto.Text = string.Empty;
+            PoblarComboProductos(string.Empty, false);
         }
         catch (Exception ex)
         {
@@ -312,35 +343,43 @@ public partial class FrmVentas : BasePage
         }
     }
 
-    private void FiltrarProductos()
+    private void FiltrarProductos(object? sender, EventArgs e)
     {
-        string busqueda = txtBuscarProducto.Text.Trim();
+        if (actualizandoListaProductos) return;
+        string busqueda = cboProducto.Text;
+        PoblarComboProductos(busqueda, true);
+    }
+
+    private void PoblarComboProductos(string busqueda, bool abrirLista)
+    {
         List<Producto> resultados = productosActivos
             .Where(p => string.IsNullOrEmpty(busqueda)
                 || p.Nombre.Contains(busqueda, StringComparison.CurrentCultureIgnoreCase)
-                || p.Codigo.ToString().Contains(busqueda, StringComparison.OrdinalIgnoreCase))
+                || p.Codigo.ToString(CultureInfo.CurrentCulture).Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+                || p.Precio.ToString(CultureInfo.CurrentCulture).Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+                || p.Precio.ToString("C2", CultureInfo.CurrentCulture).Contains(busqueda, StringComparison.OrdinalIgnoreCase))
             .OrderBy(p => p.Nombre)
             .ToList();
-
-        gridProductos.DataSource = resultados;
-        if (gridProductos.Columns[nameof(Producto.Codigo)] is { } codigo) codigo.HeaderText = "Código";
-        if (gridProductos.Columns[nameof(Producto.Nombre)] is { } nombre) nombre.HeaderText = "Producto";
-        if (gridProductos.Columns[nameof(Producto.Precio)] is { } precio)
+        actualizandoListaProductos = true;
+        try
         {
-            precio.HeaderText = "Precio";
-            precio.DefaultCellStyle.Format = "C2";
+            cboProducto.BeginUpdate();
+            cboProducto.Items.Clear();
+            foreach (var producto in resultados)
+                cboProducto.Items.Add(new ProductoOpcion(producto));
+            cboProducto.SelectedIndex = -1;
+            cboProducto.Text = busqueda;
+            cboProducto.SelectionStart = cboProducto.Text.Length;
+            cboProducto.SelectionLength = 0;
+            if (abrirLista)
+                cboProducto.DroppedDown = resultados.Count > 0;
         }
-        foreach (string columna in new[]
+        finally
         {
-            nameof(Producto.TipoStock), nameof(Producto.Stock), nameof(Producto.StockMinimo),
-            nameof(Producto.StockDisponible), nameof(Producto.Activo), nameof(Producto.CategoriaId),
-            nameof(Producto.CategoriaNombre)
-        })
-            if (gridProductos.Columns[columna] is { } oculta) oculta.Visible = false;
-
-        gridProductos.ClearSelection();
+            cboProducto.EndUpdate();
+            actualizandoListaProductos = false;
+        }
         lblSinResultados.Visible = resultados.Count == 0;
-        lblSinResultados.Text = "No se encontraron productos.";
         ActualizarEstadoBotones();
     }
 
@@ -373,7 +412,7 @@ public partial class FrmVentas : BasePage
         if (venta is null)
         {
             gridLineas.DataSource = null;
-            lblTotal.Text = "Total: $0,00";
+            lblEncabezadoVenta.Text = "Venta pendiente - Total: $0,00";
             ActualizarEstadoBotones();
             return;
         }
@@ -381,6 +420,7 @@ public partial class FrmVentas : BasePage
         try
         {
             gridLineas.DataSource = repositorio.ListarLineas(venta.Id);
+            gridLineas.ClearSelection();
             if (gridLineas.Columns[nameof(DetalleVenta.Id)] is { } id) id.Visible = false;
             if (gridLineas.Columns[nameof(DetalleVenta.VentaId)] is { } ventaId) ventaId.Visible = false;
             if (gridLineas.Columns[nameof(DetalleVenta.ProductoCodigo)] is { } codigo) codigo.Visible = false;
@@ -396,7 +436,7 @@ public partial class FrmVentas : BasePage
                 subtotal.HeaderText = "Subtotal";
                 subtotal.DefaultCellStyle.Format = "C2";
             }
-            lblTotal.Text = $"Total: {venta.Total:C2}";
+            lblEncabezadoVenta.Text = $"Venta #{venta.Id} - PENDIENTE - Total: {venta.Total:C2}";
             ActualizarEstadoBotones();
         }
         catch (Exception ex)
@@ -555,6 +595,11 @@ public partial class FrmVentas : BasePage
     private sealed record TipoVentaOpcion(TipoVenta Tipo, string Texto)
     {
         public override string ToString() => Texto;
+    }
+
+    private sealed record ProductoOpcion(Producto Producto)
+    {
+        public override string ToString() => $"{Producto.Codigo} - {Producto.Nombre} - {Producto.Precio:C2}";
     }
 
     private sealed record MedioPagoOpcion(MedioPago Medio, string Texto)

@@ -39,8 +39,8 @@ public class BaseFormSidebar : BaseForm
     {
         var sidebar = new Panel
         {
-            Dock = DockStyle.Left, Width = 235, BackColor = Theme.ObsidianBlack,
-            Padding = new Padding(14, 16, 14, 14)
+            Dock = DockStyle.Left, Width = 260, BackColor = Theme.ObsidianBlack,
+            Padding = new Padding(8, 16, 8, 14)
         };
         var layout = new TableLayoutPanel
         {
@@ -64,14 +64,16 @@ public class BaseFormSidebar : BaseForm
             Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown,
             WrapContents = false, AutoScroll = true, BackColor = Theme.ObsidianBlack
         };
+        navegacion.HorizontalScroll.Enabled = false;
+        navegacion.HorizontalScroll.Visible = false;
         layout.Controls.Add(navegacion, 0, 1);
-        navegacion.Controls.Add(CrearBoton("Dashboard", PaginaApp.Dashboard));
+        navegacion.Controls.Add(CrearBoton("Inicio", PaginaApp.Dashboard));
+        navegacion.Controls.Add(CrearBoton("Ventas", PaginaApp.Ventas));
         navegacion.Controls.Add(CrearBoton("Productos", PaginaApp.Productos));
         navegacion.Controls.Add(CrearBoton("Ingredientes", PaginaApp.Ingredientes));
         navegacion.Controls.Add(CrearBoton("Recetas", PaginaApp.Recetas));
         navegacion.Controls.Add(CrearBoton("Mesas", PaginaApp.Mesas));
         navegacion.Controls.Add(CrearBoton("Usuarios", PaginaApp.Usuarios));
-        navegacion.Controls.Add(CrearBoton("Ventas", PaginaApp.Ventas));
         if (UserPermissions.CanManageUsers(usuarioActual))
             navegacion.Controls.Add(CrearBoton("Historial de ventas", PaginaApp.HistorialVentas));
 
@@ -97,7 +99,7 @@ public class BaseFormSidebar : BaseForm
 
     private Button CrearBoton(string texto, PaginaApp destino)
     {
-        var boton = new Button { Text = texto, Width = 207, Height = 48, Margin = new Padding(0, 0, 0, 8) };
+        var boton = new Button { Text = texto, Width = 236, Height = 48, Margin = new Padding(0, 0, 0, 8) };
         Theme.StyleNavigationButton(boton, false);
         boton.Click += (_, _) => Navegar(destino);
         botones.Add(destino, boton);
