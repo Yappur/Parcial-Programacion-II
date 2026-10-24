@@ -115,6 +115,40 @@ internal static class Database
             """, connection);
         recipeCommand.ExecuteNonQuery();
 
+        using var salesCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS ventas (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                fecha_hora DATETIME NOT NULL,
+                fecha_cierre DATETIME NULL,
+                tipo_venta ENUM('MESA','DELIVERY','MOSTRADOR') NOT NULL,
+                mesa_id INT NULL,
+                usuario_id INT NOT NULL,
+                total DECIMAL(10,2) NOT NULL DEFAULT 0,
+                medio_pago ENUM('EFECTIVO','TRANSFERENCIA') NULL,
+                estado ENUM('PENDIENTE','CERRADA','ANULADA') NOT NULL DEFAULT 'PENDIENTE',
+                notas VARCHAR(500) NULL,
+                mesa_pendiente_id INT GENERATED ALWAYS AS (CASE WHEN estado = 'PENDIENTE' THEN mesa_id END) STORED,
+                UNIQUE KEY uq_una_pendiente_por_mesa (mesa_pendiente_id),
+                CONSTRAINT fk_ventas_mesas FOREIGN KEY (mesa_id) REFERENCES mesas(id),
+                CONSTRAINT fk_ventas_usuarios FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+            ) ENGINE=InnoDB;
+            """, connection);
+        salesCommand.ExecuteNonQuery();
+
+        using var saleDetailsCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS detalle_venta (
+                id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                venta_id INT NOT NULL,
+                producto_codigo INT NOT NULL,
+                cantidad INT NOT NULL CHECK (cantidad > 0),
+                precio_unitario DECIMAL(10,2) NOT NULL,
+                subtotal DECIMAL(10,2) NOT NULL,
+                CONSTRAINT fk_detalle_ventas FOREIGN KEY (venta_id) REFERENCES ventas(id),
+                CONSTRAINT fk_detalle_productos FOREIGN KEY (producto_codigo) REFERENCES productos(codigo)
+            ) ENGINE=InnoDB;
+            """, connection);
+        saleDetailsCommand.ExecuteNonQuery();
+
         using var seedCommand = new MySqlCommand("""
             INSERT INTO categorias (nombre) VALUES ('Bebidas'), ('Platos'), ('Postres')
             ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);

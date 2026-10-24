@@ -32,13 +32,35 @@ public static class Theme
     public static void StyleNavigationButton(Button button, bool active)
     {
         button.FlatStyle = FlatStyle.Flat;
-        button.FlatAppearance.BorderSize = 0;
+        button.UseVisualStyleBackColor = false;
+        button.FlatAppearance.BorderSize = 1;
+        button.FlatAppearance.BorderColor = TextPrimary;
+        button.FlatAppearance.MouseOverBackColor = SurfaceRaised;
         button.BackColor = active ? BlazeOrange : ObsidianBlack;
         button.ForeColor = TextPrimary;
         button.Font = active ? ActiveNavigationFont : NavigationFont;
         button.TextAlign = ContentAlignment.MiddleLeft;
         button.Padding = new Padding(20, 0, 8, 0);
         button.Cursor = Cursors.Hand;
+    }
+
+    public static void EstilizarBoton(Button button)
+    {
+        button.FlatStyle = FlatStyle.Flat;
+        button.UseVisualStyleBackColor = false;
+        button.FlatAppearance.BorderSize = 1;
+        button.FlatAppearance.BorderColor = button.Enabled ? TextPrimary : TextSecondary;
+        button.FlatAppearance.MouseOverBackColor = SurfaceRaised;
+        button.FlatAppearance.MouseDownBackColor = SurfaceRaised;
+        button.BackColor = Surface;
+        button.ForeColor = button.Enabled ? TextPrimary : TextSecondary;
+        button.Font = BodyFont;
+        button.Cursor = Cursors.Hand;
+        button.EnabledChanged += (_, _) =>
+        {
+            button.FlatAppearance.BorderColor = button.Enabled ? TextPrimary : TextSecondary;
+            button.ForeColor = button.Enabled ? TextPrimary : TextSecondary;
+        };
     }
 
     public static void StyleGrid(DataGridView grid)

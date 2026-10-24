@@ -2,10 +2,6 @@
 
 Sistema de gestión del local gastronómico Chachín. Este documento dice **cómo debe comportarse** el sistema. Tablas y columnas: `esquema.md`. SQL: `flujos-y-reportes.md`. Código C#: `codigo-csharp.md`. Guía general: `../SKILL.md`.
 
-## Alcance implementado actualmente
-
-El código actual tiene login, usuarios, categorías y productos con stock directo. Ingredientes, recetas, mesas, ventas, detalle de ventas y reportes todavía forman parte del diseño planificado y no están implementados en la aplicación ni en `Database.Initialize()`.
-
 Si el código o una petición contradicen estas reglas, avisar al usuario antes de seguir.
 
 ## Contenido
@@ -21,14 +17,13 @@ Si el código o una petición contradicen estas reglas, avisar al usuario antes 
 
 ## Productos, ingredientes y recetas
 
-- **Categorías de productos**: Platos, Bebidas, Postres (tabla `categorias`, con semilla en `Initialize()`). Esto sí está implementado actualmente.
+- **Categorías de productos**: Platos, Bebidas, Postres (tabla `categorias`, con semilla en `Initialize()`).
 - **Ingredientes** son una entidad aparte. No son una categoría: se consumen, no se venden.
 - Cada producto tiene `tipo_stock`:
   - `DIRECTO`: el stock vive en `productos.stock` (ej. Coca 3l, que se compra y se revende).
   - `POR_RECETA`: el stock **no se guarda**, se calcula desde los ingredientes según su receta (ej. sándwich de milanesa). Tener dos fuentes de verdad desincroniza los datos.
 - **Stock disponible de un plato** = el mínimo de `FLOOR(stock_ingrediente / cantidad_en_receta)` entre todos sus ingredientes. Ejemplo: 4 milanesas, 2 panes, 2 huevos, 2 quesos y 2 jamones, con receta de 1 de cada uno, dan 2 sándwiches. La consulta está en `flujos-y-reportes.md`.
 - **Recetas**: una pantalla permite definir, por producto `POR_RECETA`, qué ingredientes lleva y en qué cantidad.
-- **Roles**: el diseño original menciona `Admin`, `Cajero` y `Mozo`, pero el código actual también utiliza `Vendedor`. Confirmar con el equipo la lista definitiva antes de implementar permisos por rol.
 
 ## Stock
 
@@ -40,6 +35,7 @@ Si el código o una petición contradicen estas reglas, avisar al usuario antes 
 ## Ventas
 
 - Las ventas de mesa quedan `PENDIENTE`. Se les pueden agregar más productos mientras la mesa sigue ocupada, y pasan a `CERRADA` solo cuando se paga.
+- Solo se pueden cerrar o anular ventas `PENDIENTE`. Una venta `CERRADA` no se puede editar ni anular.
 - **El precio se congela en la venta**: `detalle_venta.precio_unitario` guarda el precio al momento de vender, así cambiar el precio del producto no altera el historial.
 - **Pagos divididos y excepciones**: no hay tabla de pagos. La venta tiene una columna `notas` para registrar cualquier excepción (pago dividido, propina, descuento acordado, etc.). El `medio_pago` se guarda tal cual lo que predomine; el detalle va en `notas`.
 - **"Mesa ocupada"** se deduce de si tiene una venta `PENDIENTE`; no se guarda como estado en `mesas`. Solo puede haber una venta `PENDIENTE` por mesa.
@@ -50,7 +46,7 @@ Si el código o una petición contradicen estas reglas, avisar al usuario antes 
 | Estado | Cómo se llega | Qué se puede hacer | Cuenta en recaudación |
 |---|---|---|---|
 | `PENDIENTE` | Al abrir la venta | Agregar líneas, quitar líneas, cerrar, anular | No |
-| `CERRADA` | Al pagar | Nada: una venta cerrada ya no se edita | Sí |
+| `CERRADA` | Al pagar | No se puede editar ni anular | Sí |
 | `ANULADA` | Al anular (se devuelve el stock de todas sus líneas) | Nada | No |
 
 Los pasos de cada operación, con su SQL, están en `flujos-y-reportes.md`.
@@ -78,6 +74,5 @@ Estos puntos pueden cambiar el diseño. Si el usuario trae respuestas de la entr
 
 No son reglas: son preguntas que ninguno de los documentos de origen resolvía. Decidirlas con el equipo y, cuando se decida, pasar la respuesta a la sección que corresponda.
 
-1. **¿Se puede anular una venta `CERRADA`?** Los documentos solo definen la anulación y que una venta cerrada no se edita; no dicen si se anula después de cobrada.
-2. **Receta modificada con ventas `PENDIENTE`.** Al quitar una línea o anular, el stock de un plato `POR_RECETA` se devuelve usando la receta *vigente*. Si la receta cambió después de agregar la línea, se devolvería una cantidad distinta de la que se descontó. Hay que decidir cómo evitarlo (por ejemplo, restringir la edición de recetas mientras haya ventas pendientes de ese producto).
-3. **Mesas "Reservada".** El diseño anterior pensaba un estado Libre/Ocupada/Reservada en `mesas`. El diseño vigente deduce "ocupada" de la venta `PENDIENTE` y no tiene reservas. Si la clienta las necesita, cambia el diseño de `mesas`.
+1. **Receta modificada con ventas `PENDIENTE`.** Al quitar una línea o anular una venta, se devuelve el stock de los productos `POR_RECETA` según la receta *vigente*. Se acepta que, si cambió desde que se agregó la línea, la cantidad devuelta puede diferir de la descontada. Si ya no existe una receta vigente, se cancela toda la operación y no se modifica el stock ni el detalle.
+2. **Mesas "Reservada".** El diseño anterior pensaba un estado Libre/Ocupada/Reservada en `mesas`. El diseño vigente deduce "ocupada" de la venta `PENDIENTE` y no tiene reservas. Si la clienta las necesita, cambia el diseño de `mesas`.

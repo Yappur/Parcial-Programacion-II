@@ -12,7 +12,8 @@ public enum PaginaApp
     Recetas,
     Mesas,
     Usuarios,
-    Ventas
+    Ventas,
+    HistorialVentas
 }
 
 /// <summary>Ventana principal única: conserva el sidebar y aloja una página a la vez.</summary>
@@ -38,8 +39,8 @@ public class BaseFormSidebar : BaseForm
     {
         var sidebar = new Panel
         {
-            Dock = DockStyle.Left, Width = 235, BackColor = Theme.ObsidianBlack,
-            Padding = new Padding(14, 16, 14, 14)
+            Dock = DockStyle.Left, Width = 260, BackColor = Theme.ObsidianBlack,
+            Padding = new Padding(8, 16, 8, 14)
         };
         var layout = new TableLayoutPanel
         {
@@ -61,16 +62,20 @@ public class BaseFormSidebar : BaseForm
         var navegacion = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown,
-            WrapContents = false, BackColor = Theme.ObsidianBlack
+            WrapContents = false, AutoScroll = true, BackColor = Theme.ObsidianBlack
         };
+        navegacion.HorizontalScroll.Enabled = false;
+        navegacion.HorizontalScroll.Visible = false;
         layout.Controls.Add(navegacion, 0, 1);
-        navegacion.Controls.Add(CrearBoton("Dashboard", PaginaApp.Dashboard));
+        navegacion.Controls.Add(CrearBoton("Inicio", PaginaApp.Dashboard));
+        navegacion.Controls.Add(CrearBoton("Ventas", PaginaApp.Ventas));
         navegacion.Controls.Add(CrearBoton("Productos", PaginaApp.Productos));
         navegacion.Controls.Add(CrearBoton("Ingredientes", PaginaApp.Ingredientes));
         navegacion.Controls.Add(CrearBoton("Recetas", PaginaApp.Recetas));
         navegacion.Controls.Add(CrearBoton("Mesas", PaginaApp.Mesas));
         navegacion.Controls.Add(CrearBoton("Usuarios", PaginaApp.Usuarios));
-        navegacion.Controls.Add(CrearBoton("Ventas", PaginaApp.Ventas));
+        if (UserPermissions.CanManageUsers(usuarioActual))
+            navegacion.Controls.Add(CrearBoton("Historial de ventas", PaginaApp.HistorialVentas));
 
         var cerrarSesion = new Button
         {
@@ -94,7 +99,7 @@ public class BaseFormSidebar : BaseForm
 
     private Button CrearBoton(string texto, PaginaApp destino)
     {
-        var boton = new Button { Text = texto, Width = 207, Height = 48, Margin = new Padding(0, 0, 0, 8) };
+        var boton = new Button { Text = texto, Width = 236, Height = 48, Margin = new Padding(0, 0, 0, 8) };
         Theme.StyleNavigationButton(boton, false);
         boton.Click += (_, _) => Navegar(destino);
         botones.Add(destino, boton);
@@ -103,6 +108,9 @@ public class BaseFormSidebar : BaseForm
 
     protected void Navegar(PaginaApp destino)
     {
+        if (destino == PaginaApp.HistorialVentas && !UserPermissions.CanManageUsers(usuarioActual))
+            return;
+
         if (paginaActiva == destino)
             return;
 
@@ -115,6 +123,7 @@ public class BaseFormSidebar : BaseForm
             PaginaApp.Mesas => new FrmMesas(usuarioActual),
             PaginaApp.Usuarios => new FrmUsers(usuarioActual),
             PaginaApp.Ventas => new FrmVentas(usuarioActual),
+            PaginaApp.HistorialVentas => new FrmHistorialVentas(usuarioActual),
             _ => throw new ArgumentOutOfRangeException(nameof(destino))
         };
 
