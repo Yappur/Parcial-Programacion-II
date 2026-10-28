@@ -4,6 +4,7 @@ using SistemaStock.Datos;
 using SistemaStock.Estilos;
 using SistemaStock.Modelos;
 using SistemaStock.Modelos.Usuarios;
+using FontAwesome.Sharp;
 
 namespace SistemaStock.Formularios;
 
@@ -59,6 +60,7 @@ public sealed class FrmRecetas : BasePage
         productoBox.DisplayMember = nameof(Producto.Nombre);
         productoBox.ValueMember = nameof(Producto.Codigo);
         productoBox.DataSource = productos;
+        Theme.StyleComboBox(productoBox);
         productoBox.SelectedIndexChanged += (_, _) => CargarRecetaSeleccionada();
 
         var ingredientes = ingredientesRepositorio.GetAll()
@@ -68,12 +70,19 @@ public sealed class FrmRecetas : BasePage
         ingredienteBox.DisplayMember = nameof(Ingrediente.Nombre);
         ingredienteBox.ValueMember = nameof(Ingrediente.Id);
         ingredienteBox.DataSource = ingredientes;
+        Theme.StyleComboBox(ingredienteBox);
 
-        var agregar = new Button { Text = "Agregar ingrediente", AutoSize = true };
+        var agregar = new IconButton { Text = "Agregar ingrediente", AutoSize = true };
+        Theme.SetButtonIcon(agregar, IconChar.Plus);
+        Theme.EstilizarBotonPrimario(agregar);
         agregar.Click += (_, _) => AgregarIngrediente();
-        var quitar = new Button { Text = "Quitar seleccionado", AutoSize = true };
+        var quitar = new IconButton { Text = "Quitar seleccionado", AutoSize = true };
+        Theme.SetButtonIcon(quitar, IconChar.TrashCan);
+        Theme.EstilizarBotonPeligro(quitar);
         quitar.Click += (_, _) => QuitarIngrediente();
-        var guardar = new Button { Text = "Guardar receta", AutoSize = true };
+        var guardar = new IconButton { Text = "Guardar receta", AutoSize = true };
+        Theme.SetButtonIcon(guardar, IconChar.FloppyDisk);
+        Theme.EstilizarBotonPrimario(guardar);
         guardar.Click += (_, _) => GuardarReceta();
 
         barra.Controls.Add(new Label { Text = "Producto", AutoSize = true, Padding = new Padding(0, 8, 0, 0), ForeColor = Theme.TextPrimary });
@@ -82,6 +91,7 @@ public sealed class FrmRecetas : BasePage
         barra.Controls.Add(ingredienteBox);
         barra.Controls.Add(new Label { Text = "Cantidad", AutoSize = true, Padding = new Padding(0, 8, 0, 0), ForeColor = Theme.TextPrimary });
         barra.Controls.Add(cantidadBox);
+        Theme.StyleTextBox(cantidadBox);
         barra.Controls.Add(agregar);
         barra.Controls.Add(quitar);
         barra.Controls.Add(guardar);

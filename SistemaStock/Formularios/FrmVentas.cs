@@ -2,6 +2,7 @@ using SistemaStock.Datos;
 using SistemaStock.Estilos;
 using SistemaStock.Modelos;
 using SistemaStock.Modelos.Usuarios;
+using FontAwesome.Sharp;
 using System.Globalization;
 
 namespace SistemaStock.Formularios;
@@ -26,7 +27,7 @@ public partial class FrmVentas : BasePage
         Dock = DockStyle.Fill,
         AutoGenerateColumns = true
     };
-    private readonly BotonTema btnAbrirVenta = new() { Text = "Abrir venta", AutoSize = true, Height = 36 };
+    private readonly IconButton btnAbrirVenta = new() { Text = "Abrir venta", AutoSize = true, Height = 36 };
     private readonly Label lblAyudaMesas = new()
     {
         AutoSize = true,
@@ -56,12 +57,12 @@ public partial class FrmVentas : BasePage
         Visible = false
     };
     private readonly DataGridView gridLineas = new() { Dock = DockStyle.Fill, AutoGenerateColumns = true };
-    private readonly BotonTema btnAgregarLinea = new() { Text = "Agregar producto", AutoSize = true, Height = 36 };
-    private readonly BotonTema btnQuitarLinea = new() { Text = "Quitar producto seleccionado", AutoSize = true, Height = 36, Enabled = false };
+    private readonly IconButton btnAgregarLinea = new() { Text = "Agregar producto", AutoSize = true, Height = 36 };
+    private readonly IconButton btnQuitarLinea = new() { Text = "Quitar producto seleccionado", AutoSize = true, Height = 36, Enabled = false };
     private readonly ComboBox cboMedioPago = new() { Width = 145, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly TextBox txtNotas = new() { Width = 180, MaxLength = 500 };
-    private readonly BotonTema btnCerrarVenta = new() { Text = "Cerrar venta", AutoSize = true, Height = 36, Enabled = false };
-    private readonly BotonTema btnAnularVenta = new() { Text = "Anular venta", AutoSize = true, Height = 36, Enabled = false };
+    private readonly IconButton btnCerrarVenta = new() { Text = "Cerrar venta", AutoSize = true, Height = 36, Enabled = false };
+    private readonly IconButton btnAnularVenta = new() { Text = "Anular venta", AutoSize = true, Height = 36, Enabled = false };
     private readonly Label lblEncabezadoVenta = new()
     {
         Dock = DockStyle.Fill,
@@ -127,11 +128,11 @@ public partial class FrmVentas : BasePage
             new TipoVentaOpcion(TipoVenta.Delivery, "Delivery")
         });
         cboTipoVenta.SelectedIndex = 0;
-        cboTipoVenta.BackColor = Theme.Surface;
-        cboTipoVenta.ForeColor = Theme.TextPrimary;
+        Theme.StyleComboBox(cboTipoVenta);
         cboTipoVenta.SelectedIndexChanged += (_, _) => ActualizarTipoVenta();
         barra.Controls.Add(cboTipoVenta);
-        Theme.EstilizarBoton(btnAbrirVenta);
+        Theme.SetButtonIcon(btnAbrirVenta, IconChar.Plus);
+        Theme.EstilizarBotonPrimario(btnAbrirVenta);
         btnAbrirVenta.Click += (_, _) => AbrirVenta();
         barra.Controls.Add(btnAbrirVenta);
         barra.Controls.Add(lblAyudaMesas);
@@ -150,17 +151,13 @@ public partial class FrmVentas : BasePage
     private void ConstruirPestanaDetalle()
     {
         cboVentasPendientes.Width = 260;
-        cboVentasPendientes.DropDownStyle = ComboBoxStyle.DropDownList;
         cboVentasPendientes.SelectedIndexChanged += VentaPendienteSeleccionada;
-        cboVentasPendientes.BackColor = Theme.Surface;
-        cboVentasPendientes.ForeColor = Theme.TextPrimary;
+        Theme.StyleComboBox(cboVentasPendientes);
         cboVentasPendientes.Margin = new Padding(4, 3, 12, 3);
 
         cboProducto.AccessibleName = "Buscar producto por código, nombre o precio";
         cboProducto.AccessibleDescription = "Escribí parte del código, el nombre o el precio para filtrar productos.";
-        cboProducto.BackColor = Theme.Surface;
-        cboProducto.ForeColor = Theme.TextPrimary;
-        cboProducto.Font = Theme.BodyFont;
+        Theme.StyleComboBox(cboProducto, keepEditable: true);
         cboProducto.Margin = new Padding(4, 3, 10, 3);
         cboProducto.TextUpdate += FiltrarProductos;
         cboProducto.SelectedIndexChanged += (_, _) => ActualizarEstadoBotones();
@@ -169,7 +166,8 @@ public partial class FrmVentas : BasePage
         numCantidad.ForeColor = Theme.TextPrimary;
         numCantidad.ValueChanged += (_, _) => ActualizarEstadoBotones();
 
-        Theme.EstilizarBoton(btnAgregarLinea);
+        Theme.SetButtonIcon(btnAgregarLinea, IconChar.CartPlus);
+        Theme.EstilizarBotonPrimario(btnAgregarLinea);
         btnAgregarLinea.Enabled = false;
         btnAgregarLinea.Click += (_, _) => AgregarLinea();
 
@@ -243,7 +241,8 @@ public partial class FrmVentas : BasePage
             BackColor = Theme.DeepCharcoal,
             Padding = new Padding(16, 8, 16, 0)
         };
-        Theme.EstilizarBoton(btnQuitarLinea);
+        Theme.SetButtonIcon(btnQuitarLinea, IconChar.TrashCan);
+        Theme.EstilizarBotonPeligro(btnQuitarLinea);
         btnQuitarLinea.Enabled = false;
         btnQuitarLinea.Click += (_, _) => QuitarLinea();
         pie.Controls.Add(btnQuitarLinea);
@@ -254,19 +253,19 @@ public partial class FrmVentas : BasePage
             new MedioPagoOpcion(MedioPago.Transferencia, "Transferencia")
         });
         cboMedioPago.SelectedIndexChanged += (_, _) => ActualizarEstadoBotones();
-        cboMedioPago.BackColor = Theme.Surface;
-        cboMedioPago.ForeColor = Theme.TextPrimary;
+        Theme.StyleComboBox(cboMedioPago);
         pie.Controls.Add(cboMedioPago);
         pie.Controls.Add(CrearEtiqueta("Notas"));
         txtNotas.PlaceholderText = "Propina, descuento, pago dividido...";
-        txtNotas.BackColor = Theme.Surface;
-        txtNotas.ForeColor = Theme.TextPrimary;
         pie.Controls.Add(txtNotas);
-        Theme.EstilizarBoton(btnCerrarVenta);
+        Theme.StyleTextBox(txtNotas);
+        Theme.SetButtonIcon(btnCerrarVenta, IconChar.Check);
+        Theme.EstilizarBotonPrimario(btnCerrarVenta);
         btnCerrarVenta.Enabled = false;
         btnCerrarVenta.Click += (_, _) => CerrarVenta();
         pie.Controls.Add(btnCerrarVenta);
-        Theme.EstilizarBoton(btnAnularVenta);
+        Theme.SetButtonIcon(btnAnularVenta, IconChar.Ban);
+        Theme.EstilizarBotonPeligro(btnAnularVenta);
         btnAnularVenta.Enabled = false;
         btnAnularVenta.Click += (_, _) => AnularVenta();
         pie.Controls.Add(btnAnularVenta);

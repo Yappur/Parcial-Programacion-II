@@ -3,6 +3,7 @@ using SistemaStock.Datos;
 using SistemaStock.Estilos;
 using SistemaStock.Modelos;
 using SistemaStock.Modelos.Usuarios;
+using FontAwesome.Sharp;
 
 namespace SistemaStock.Formularios;
 
@@ -34,19 +35,27 @@ public partial class FrmProductos : BasePage
 
         if (user is not null && UserPermissions.CanManageUsers(user))
         {
-            var add = new Button { Text = "Crear producto", AutoSize = true };
+            var add = new IconButton { Text = "Crear producto", AutoSize = true };
+            Theme.SetButtonIcon(add, IconChar.Plus);
+            Theme.EstilizarBotonPrimario(add);
             add.Click += (_, _) => CrearProducto();
             top.Controls.Add(add);
 
-            var edit = new Button { Text = "Modificar", AutoSize = true };
+            var edit = new IconButton { Text = "Modificar", AutoSize = true };
+            Theme.SetButtonIcon(edit, IconChar.PenToSquare);
+            Theme.EstilizarBotonSecundario(edit);
             edit.Click += (_, _) => ModificarProducto();
             top.Controls.Add(edit);
 
-            var deactivate = new Button { Text = "Desactivar", AutoSize = true };
+            var deactivate = new IconButton { Text = "Desactivar", AutoSize = true };
+            Theme.SetButtonIcon(deactivate, IconChar.TrashCan);
+            Theme.EstilizarBotonPeligro(deactivate);
             deactivate.Click += (_, _) => DesactivarProducto();
             top.Controls.Add(deactivate);
             top.Controls.Add(busqueda);
             top.Controls.Add(filtroCategoria);
+            Theme.StyleTextBox(busqueda);
+            Theme.StyleComboBox(filtroCategoria);
             CargarCategorias();
             busqueda.TextChanged += (_, _) => ActualizarListado();
             filtroCategoria.SelectedIndexChanged += (_, _) => ActualizarListado();
@@ -215,11 +224,9 @@ internal sealed class ProductoEditForm : BaseForm
         AgregarCampo(panel, "Stock mínimo", stockMinimoBox);
         AgregarCampo(panel, "Categoría", categoriaBox);
 
-        var guardar = new Button { Text = "Guardar", Width = 280, Height = 38 };
-        guardar.BackColor = Theme.BlazeOrange;
-        guardar.ForeColor = Theme.TextPrimary;
-        guardar.FlatStyle = FlatStyle.Flat;
-        guardar.FlatAppearance.BorderSize = 0;
+        var guardar = new IconButton { Text = "Guardar", Width = 280, Height = 38 };
+        Theme.SetButtonIcon(guardar, IconChar.FloppyDisk);
+        Theme.EstilizarBotonPrimario(guardar);
         guardar.Click += Guardar;
         panel.Controls.Add(guardar);
         Controls.Add(panel);
@@ -248,15 +255,13 @@ internal sealed class ProductoEditForm : BaseForm
 
     private static void AgregarCampo(FlowLayoutPanel panel, string texto, Control control)
     {
-        panel.Controls.Add(new Label { Text = texto, AutoSize = true, ForeColor = Theme.TextPrimary });
-        if (control is TextBox textBox)
-        {
-            textBox.BackColor = Theme.ObsidianBlack;
-            textBox.ForeColor = Theme.TextPrimary;
-            textBox.BorderStyle = BorderStyle.FixedSingle;
-        }
-        control.Margin = new Padding(0, 3, 0, 10);
+        panel.Controls.Add(new Label { Text = texto, AutoSize = true, Margin = new Padding(0, 0, 0, 2), ForeColor = Theme.TextPrimary });
+        control.Margin = new Padding(0, 0, 0, 6);
         panel.Controls.Add(control);
+        if (control is TextBox textBox)
+            Theme.StyleTextBox(textBox);
+        else if (control is ComboBox comboBox)
+            Theme.StyleComboBox(comboBox);
     }
 
     private void Guardar(object? sender, EventArgs e)

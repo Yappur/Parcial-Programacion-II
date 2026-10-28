@@ -2,6 +2,7 @@ using SistemaStock.Datos;
 using SistemaStock.Estilos;
 using SistemaStock.Modelos;
 using SistemaStock.Modelos.Usuarios;
+using FontAwesome.Sharp;
 
 namespace SistemaStock.Formularios;
 
@@ -79,12 +80,12 @@ public sealed class FrmHistorialVentas : BasePage
             new EstadoFiltro(EstadoVenta.Anulada, "Anulada")
         });
         cboEstado.SelectedIndex = 2;
-        cboEstado.BackColor = Theme.Surface;
-        cboEstado.ForeColor = Theme.TextPrimary;
+        Theme.StyleComboBox(cboEstado);
         filtros.Controls.Add(cboEstado);
 
-        var btnFiltrar = new BotonTema { Text = "Filtrar", AutoSize = true, Height = 36 };
-        Theme.EstilizarBoton(btnFiltrar);
+        var btnFiltrar = new IconButton { Text = "Filtrar", AutoSize = true, Height = 36 };
+        Theme.SetButtonIcon(btnFiltrar, IconChar.Filter);
+        Theme.EstilizarBotonPrimario(btnFiltrar);
         btnFiltrar.Click += (_, _) => CargarVentas();
         filtros.Controls.Add(btnFiltrar);
 

@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using SistemaStock.Datos;
 using SistemaStock.Estilos;
 using SistemaStock.Modelos.Usuarios;
+using FontAwesome.Sharp;
 
 namespace SistemaStock.Formularios
 {
@@ -32,10 +33,12 @@ namespace SistemaStock.Formularios
                 top.Controls.Add(new Label { Text = $"Sesión: {user.FullName} | Rol: {user.Role}", AutoSize = true, Padding = new Padding(0, 8, 12, 0), ForeColor = Theme.TextSecondary });
             if (user is not null && UserPermissions.CanManageUsers(user))
             {
-                var add = new Button { Text = "Crear usuario", AutoSize = true }; add.Click += (_, _) => CreateUser(); top.Controls.Add(add);
-                var edit = new Button { Text = "Modificar / contraseña", AutoSize = true }; edit.Click += (_, _) => EditUser(); top.Controls.Add(edit);
-                var deactivate = new Button { Text = "Desactivar", AutoSize = true }; deactivate.Click += (_, _) => DeactivateUser(); top.Controls.Add(deactivate);
+                var add = new IconButton { Text = "Crear usuario", AutoSize = true }; Theme.SetButtonIcon(add, IconChar.UserPlus); add.Click += (_, _) => CreateUser(); top.Controls.Add(add);
+                Theme.EstilizarBotonPrimario(add);
+                var edit = new IconButton { Text = "Modificar / contraseña", AutoSize = true }; Theme.SetButtonIcon(edit, IconChar.UserEdit); Theme.EstilizarBotonSecundario(edit); edit.Click += (_, _) => EditUser(); top.Controls.Add(edit);
+                var deactivate = new IconButton { Text = "Desactivar", AutoSize = true }; Theme.SetButtonIcon(deactivate, IconChar.UserSlash); Theme.EstilizarBotonPeligro(deactivate); deactivate.Click += (_, _) => DeactivateUser(); top.Controls.Add(deactivate);
                 top.Controls.Add(search); search.TextChanged += (_, _) => RefreshUsers();
+                Theme.StyleTextBox(search);
             }
             else
                 top.Controls.Add(new Label { Text = "Tu rol no permite administrar usuarios.", AutoSize = true, Padding = new Padding(8), ForeColor = Theme.TextSecondary });
@@ -124,11 +127,9 @@ namespace SistemaStock.Formularios
                 activeBox.Margin = new Padding(0, 3, 0, 10);
                 panel.Controls.Add(activeBox);
             }
-            var save = new Button { Text = "Guardar", Width = 280, Height = 38 };
-            save.BackColor = Theme.BlazeOrange;
-            save.ForeColor = Theme.TextPrimary;
-            save.FlatStyle = FlatStyle.Flat;
-            save.FlatAppearance.BorderSize = 0;
+            var save = new IconButton { Text = "Guardar", Width = 280, Height = 38 };
+            Theme.SetButtonIcon(save, IconChar.FloppyDisk);
+            Theme.EstilizarBotonPrimario(save);
             save.Click += Save;
             panel.Controls.Add(save);
             Controls.Add(panel);
@@ -138,21 +139,13 @@ namespace SistemaStock.Formularios
 
         private static void AgregarCampo(FlowLayoutPanel panel, string texto, Control control)
         {
-            panel.Controls.Add(new Label { Text = texto, AutoSize = true, ForeColor = Theme.TextPrimary });
-            if (control is TextBox textBox)
-            {
-                textBox.BackColor = Theme.ObsidianBlack;
-                textBox.ForeColor = Theme.TextPrimary;
-                textBox.BorderStyle = BorderStyle.FixedSingle;
-            }
-            else if (control is ComboBox comboBox)
-            {
-                comboBox.BackColor = Theme.ObsidianBlack;
-                comboBox.ForeColor = Theme.TextPrimary;
-                comboBox.FlatStyle = FlatStyle.Flat;
-            }
-            control.Margin = new Padding(0, 3, 0, 10);
+            panel.Controls.Add(new Label { Text = texto, AutoSize = true, Margin = new Padding(0, 0, 0, 2), ForeColor = Theme.TextPrimary });
+            control.Margin = new Padding(0, 0, 0, 6);
             panel.Controls.Add(control);
+            if (control is TextBox textBox)
+                Theme.StyleTextBox(textBox);
+            else if (control is ComboBox comboBox)
+                Theme.StyleComboBox(comboBox);
         }
 
         private void Save(object? sender, EventArgs e)

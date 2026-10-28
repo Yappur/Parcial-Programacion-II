@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using SistemaStock.Datos;
 using SistemaStock.Estilos;
 using SistemaStock.Modelos.Usuarios;
+using FontAwesome.Sharp;
 
 namespace SistemaStock.Formularios
 {
@@ -120,13 +121,10 @@ namespace SistemaStock.Formularios
             txtUsuario = new TextBox()
             {
                 Location = new Point(38, 180),
-                Size = new Size(345, 38),
-                Font = new Font("Segoe UI", 12),
-                BackColor = Color.FromArgb(43, 44, 49),
-                ForeColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle
+                Size = new Size(345, 38)
             };
             panelLogin.Controls.Add(txtUsuario);
+            Theme.StyleTextBox(txtUsuario);
 
             panelLogin.Controls.Add(CrearEtiqueta("CONTRASEÑA", 38, 240));
 
@@ -134,13 +132,10 @@ namespace SistemaStock.Formularios
             {
                 Location = new Point(38, 270),
                 Size = new Size(345, 38),
-                Font = new Font("Segoe UI", 12),
-                BackColor = Color.FromArgb(43, 44, 49),
-                ForeColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
                 UseSystemPasswordChar = true
             };
             panelLogin.Controls.Add(txtContrasena);
+            Theme.StyleTextBox(txtContrasena);
 
             lblMensaje = new Label()
             {
@@ -151,18 +146,15 @@ namespace SistemaStock.Formularios
             };
             panelLogin.Controls.Add(lblMensaje);
 
-            Button btnIngresar = new()
+            IconButton btnIngresar = new()
             {
                 Text = "INGRESAR",
                 Location = new Point(38, 365),
-                Size = new Size(345, 48),
-                BackColor = naranja,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                Cursor = Cursors.Hand
+                Size = new Size(345, 48)
             };
-            btnIngresar.FlatAppearance.BorderSize = 0;
+            Theme.SetButtonIcon(btnIngresar, IconChar.RightToBracket);
+            Theme.EstilizarBotonPrimario(btnIngresar);
+            Theme.CenterIconButtonContents(btnIngresar);
             btnIngresar.Click += btnIngresar_Click;
             panelLogin.Controls.Add(btnIngresar);
 
@@ -269,12 +261,14 @@ namespace SistemaStock.Formularios
             AgregarCampo("Contraseña (mínimo 8 caracteres)", txtPassword, 140);
             txtPassword.UseSystemPasswordChar = true;
 
-            Button btnCrear = new()
+            IconButton btnCrear = new()
             {
                 Text = "Crear administrador",
                 Location = new Point(20, 220),
                 Size = new Size(320, 40)
             };
+            Theme.SetButtonIcon(btnCrear, IconChar.UserPlus);
+            Theme.EstilizarBotonPrimario(btnCrear);
             btnCrear.Click += CrearAdministrador;
             Controls.Add(btnCrear);
         }
@@ -291,6 +285,7 @@ namespace SistemaStock.Formularios
             campo.Location = new Point(20, y + 22);
             campo.Size = new Size(320, 25);
             Controls.Add(campo);
+            Theme.StyleTextBox(campo);
         }
 
         private void CrearAdministrador(object? sender, EventArgs e)

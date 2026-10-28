@@ -36,11 +36,12 @@ public sealed class BotonTema : Button
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        Color fondo = mouseSobre && Enabled ? Theme.SurfaceRaised : Theme.Surface;
-        Color linea = Enabled ? Theme.TextPrimary : Theme.TextSecondary;
+        Color fondo = mouseSobre && Enabled ? FlatAppearance.MouseOverBackColor : BackColor;
         Color texto = Enabled ? Theme.TextPrimary : Theme.TextSecondary;
         using (var brush = new SolidBrush(fondo)) e.Graphics.FillRectangle(brush, ClientRectangle);
-        using (var pen = new Pen(linea, 1)) e.Graphics.DrawRectangle(pen, 0, 0, Math.Max(0, Width - 1), Math.Max(0, Height - 1));
+        if (FlatAppearance.BorderSize > 0)
+            using (var pen = new Pen(FlatAppearance.BorderColor, FlatAppearance.BorderSize))
+                e.Graphics.DrawRectangle(pen, 0, 0, Math.Max(0, Width - 1), Math.Max(0, Height - 1));
         TextRenderer.DrawText(e.Graphics, Text, Font, ClientRectangle, texto,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         if (Focused && ShowFocusCues)
