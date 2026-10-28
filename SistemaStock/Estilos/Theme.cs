@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using FontAwesome.Sharp;
 
@@ -26,6 +27,12 @@ public static class Theme
     private static readonly Color PrimaryHover = Color.FromArgb(255, 137, 76);
     private static readonly Color DangerHover = Color.FromArgb(215, 75, 66);
     private static readonly Color WarningHover = Color.FromArgb(239, 187, 76);
+    private static readonly Color InputSelection = Color.FromArgb(74, 52, 40);
+    private static readonly Color GridRowAlternate = Color.FromArgb(48, 52, 59);
+    private static readonly Color GridRowHover = Color.FromArgb(87, 59, 43);
+    private const int InputHeight = 28;
+    private static readonly ConditionalWeakTable<DataGridView, GridHoverState> GridHoverStates = new();
+    private static readonly ConditionalWeakTable<Control, ThemedInputBorder> ThemedInputBorders = new();
 
     public static void ApplyForm(Form form)
     {
@@ -102,8 +109,61 @@ public static class Theme
 
     public static void EstilizarBotonCerrarSesion(Button button)
     {
-        StyleActionButton(button, BlazeOrange, PrimaryHover, 1);
-        button.FlatAppearance.BorderColor = GridLine;
+        StyleActionButton(button, Surface, SurfaceRaised, 1);
+        button.FlatAppearance.BorderColor = BlazeOrange;
+        if (button is IconButton iconButton)
+            CenterIconButtonContents(iconButton);
+    }
+
+    public static void StyleTextBox(TextBox textBox)
+    {
+        textBox.BackColor = Surface;
+        textBox.ForeColor = TextPrimary;
+        textBox.Font = BodyFont;
+        textBox.AutoSize = false;
+        textBox.Multiline = false;
+        textBox.Height = InputHeight;
+        textBox.BorderStyle = BorderStyle.FixedSingle;
+        ApplyThemedInputBorder(textBox);
+    }
+
+    public static void StyleComboBox(ComboBox comboBox, bool keepEditable = false)
+    {
+        comboBox.DropDownStyle = keepEditable ? ComboBoxStyle.DropDown : ComboBoxStyle.DropDownList;
+        comboBox.FlatStyle = FlatStyle.Flat;
+        comboBox.BackColor = Surface;
+        comboBox.ForeColor = TextPrimary;
+        comboBox.Font = BodyFont;
+        comboBox.Height = InputHeight;
+        ApplyThemedInputBorder(comboBox);
+        comboBox.DrawItem -= DrawThemedComboItem;
+        if (keepEditable)
+        {
+            comboBox.DrawMode = DrawMode.Normal;
+        }
+        else
+        {
+            comboBox.DrawMode = DrawMode.OwnerDrawFixed;
+            comboBox.ItemHeight = 22;
+            comboBox.DrawItem += DrawThemedComboItem;
+        }
+    }
+
+    private static void DrawThemedComboItem(object? sender, DrawItemEventArgs e)
+    {
+        if (sender is not ComboBox comboBox || e.Index < 0)
+            return;
+
+        bool selected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+        Color background = selected ? InputSelection : Surface;
+        using (var brush = new SolidBrush(background))
+            e.Graphics.FillRectangle(brush, e.Bounds);
+
+        TextRenderer.DrawText(e.Graphics, comboBox.GetItemText(comboBox.Items[e.Index]), comboBox.Font,
+            Rectangle.Inflate(e.Bounds, -8, 0), TextPrimary,
+            TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+        if ((e.State & DrawItemState.Focus) == DrawItemState.Focus)
+            e.DrawFocusRectangle();
     }
 
     public static void SetButtonIcon(IconButton button, IconChar icon, int size = 18)
@@ -113,6 +173,36 @@ public static class Theme
         button.TextImageRelation = TextImageRelation.ImageBeforeText;
         button.ImageAlign = ContentAlignment.MiddleLeft;
         button.TextAlign = ContentAlignment.MiddleCenter;
+    }
+
+    public static void CenterIconButtonContents(IconButton button)
+    {
+        button.SizeChanged -= CenterIconButtonContentsChanged;
+        button.SizeChanged += CenterIconButtonContentsChanged;
+        button.TextChanged -= CenterIconButtonContentsChanged;
+        button.TextChanged += CenterIconButtonContentsChanged;
+        button.FontChanged -= CenterIconButtonContentsChanged;
+        button.FontChanged += CenterIconButtonContentsChanged;
+        ApplyCenteredIconButtonLayout(button);
+    }
+
+    private static void CenterIconButtonContentsChanged(object? sender, EventArgs e)
+    {
+        if (sender is IconButton button)
+            ApplyCenteredIconButtonLayout(button);
+    }
+
+    private static void ApplyCenteredIconButtonLayout(IconButton button)
+    {
+        int textWidth = TextRenderer.MeasureText(button.Text, button.Font).Width;
+        int groupWidth = button.IconSize + 4 + textWidth;
+        int sidePadding = Math.Max(0, (button.ClientSize.Width - groupWidth) / 2);
+        // Use only left padding: symmetric padding leaves too little room for the text
+        // in IconButton's ImageBeforeText layout and can make it wrap to a second line.
+        button.Padding = new Padding(sidePadding, 0, 0, 0);
+        button.TextImageRelation = TextImageRelation.ImageBeforeText;
+        button.ImageAlign = ContentAlignment.MiddleLeft;
+        button.TextAlign = ContentAlignment.MiddleLeft;
     }
 
     private static void StyleActionButton(Button button, Color background, Color hover, int borderSize)
@@ -165,8 +255,9 @@ public static class Theme
         grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
         grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None;
         grid.DefaultCellStyle.BackColor = Surface;
+        grid.AlternatingRowsDefaultCellStyle.BackColor = GridRowAlternate;
         grid.DefaultCellStyle.ForeColor = TextPrimary;
-        grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(74, 52, 40);
+        grid.DefaultCellStyle.SelectionBackColor = InputSelection;
         grid.DefaultCellStyle.SelectionForeColor = TextPrimary;
         grid.DefaultCellStyle.Font = BodyFont;
         grid.RowHeadersVisible = false;
@@ -177,5 +268,108 @@ public static class Theme
         grid.ReadOnly = true;
         grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         grid.MultiSelect = false;
+        _ = GridHoverStates.GetValue(grid, _ => new GridHoverState());
+        grid.MouseMove -= GridMouseMove;
+        grid.MouseMove += GridMouseMove;
+        grid.MouseLeave -= GridMouseLeave;
+        grid.MouseLeave += GridMouseLeave;
+        grid.RowPrePaint -= GridRowPrePaint;
+        grid.RowPrePaint += GridRowPrePaint;
+        grid.Invalidate();
+    }
+
+    private static void GridMouseMove(object? sender, MouseEventArgs e)
+    {
+        if (sender is not DataGridView grid || !GridHoverStates.TryGetValue(grid, out GridHoverState state))
+            return;
+
+        int previousRow = state.HoveredRow;
+        state.HoveredRow = grid.HitTest(e.X, e.Y).RowIndex;
+        if (previousRow >= 0 && previousRow < grid.Rows.Count)
+            grid.InvalidateRow(previousRow);
+        if (state.HoveredRow >= 0 && state.HoveredRow < grid.Rows.Count)
+            grid.InvalidateRow(state.HoveredRow);
+    }
+
+    private static void GridMouseLeave(object? sender, EventArgs e)
+    {
+        if (sender is not DataGridView grid || !GridHoverStates.TryGetValue(grid, out GridHoverState state))
+            return;
+
+        int previousRow = state.HoveredRow;
+        state.HoveredRow = -1;
+        if (previousRow >= 0 && previousRow < grid.Rows.Count)
+            grid.InvalidateRow(previousRow);
+    }
+
+    private static void GridRowPrePaint(object? sender, DataGridViewRowPrePaintEventArgs e)
+    {
+        if (sender is not DataGridView grid || e.RowIndex < 0 ||
+            !GridHoverStates.TryGetValue(grid, out GridHoverState state))
+            return;
+
+        e.InheritedRowStyle.BackColor = e.RowIndex == state.HoveredRow
+            ? GridRowHover
+            : e.RowIndex % 2 == 0 ? Surface : GridRowAlternate;
+    }
+
+    private sealed class GridHoverState
+    {
+        public int HoveredRow { get; set; } = -1;
+    }
+
+    private static void ApplyThemedInputBorder(Control control)
+    {
+        _ = ThemedInputBorders.GetValue(control, input => new ThemedInputBorder(input));
+    }
+
+    private sealed class ThemedInputBorder : NativeWindow
+    {
+        private const int WmPaint = 0x000F;
+        private const int WmNcPaint = 0x0085;
+        private readonly Control control;
+
+        public ThemedInputBorder(Control control)
+        {
+            this.control = control;
+            control.HandleCreated += ControlHandleCreated;
+            control.HandleDestroyed += ControlHandleDestroyed;
+            control.Disposed += ControlDisposed;
+            if (control.IsHandleCreated)
+                AssignHandle(control.Handle);
+        }
+
+        protected override void WndProc(ref Message message)
+        {
+            base.WndProc(ref message);
+            if ((message.Msg == WmPaint || message.Msg == WmNcPaint) &&
+                !control.IsDisposed && control.IsHandleCreated && control.Width > 1 && control.Height > 1)
+            {
+                using Graphics graphics = Graphics.FromHwnd(Handle);
+                using Pen border = new(GridLine, 1F);
+                graphics.DrawRectangle(border, 0, 0, control.Width - 1, control.Height - 1);
+            }
+        }
+
+        private void ControlHandleCreated(object? sender, EventArgs e)
+        {
+            if (control.IsHandleCreated && Handle == IntPtr.Zero)
+                AssignHandle(control.Handle);
+        }
+
+        private void ControlHandleDestroyed(object? sender, EventArgs e)
+        {
+            if (Handle != IntPtr.Zero)
+                ReleaseHandle();
+        }
+
+        private void ControlDisposed(object? sender, EventArgs e)
+        {
+            control.HandleCreated -= ControlHandleCreated;
+            control.HandleDestroyed -= ControlHandleDestroyed;
+            control.Disposed -= ControlDisposed;
+            if (Handle != IntPtr.Zero)
+                ReleaseHandle();
+        }
     }
 }

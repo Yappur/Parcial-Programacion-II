@@ -54,6 +54,8 @@ public partial class FrmProductos : BasePage
             top.Controls.Add(deactivate);
             top.Controls.Add(busqueda);
             top.Controls.Add(filtroCategoria);
+            Theme.StyleTextBox(busqueda);
+            Theme.StyleComboBox(filtroCategoria);
             CargarCategorias();
             busqueda.TextChanged += (_, _) => ActualizarListado();
             filtroCategoria.SelectedIndexChanged += (_, _) => ActualizarListado();
@@ -253,15 +255,13 @@ internal sealed class ProductoEditForm : BaseForm
 
     private static void AgregarCampo(FlowLayoutPanel panel, string texto, Control control)
     {
-        panel.Controls.Add(new Label { Text = texto, AutoSize = true, ForeColor = Theme.TextPrimary });
-        if (control is TextBox textBox)
-        {
-            textBox.BackColor = Theme.ObsidianBlack;
-            textBox.ForeColor = Theme.TextPrimary;
-            textBox.BorderStyle = BorderStyle.FixedSingle;
-        }
-        control.Margin = new Padding(0, 3, 0, 10);
+        panel.Controls.Add(new Label { Text = texto, AutoSize = true, Margin = new Padding(0, 0, 0, 2), ForeColor = Theme.TextPrimary });
+        control.Margin = new Padding(0, 0, 0, 6);
         panel.Controls.Add(control);
+        if (control is TextBox textBox)
+            Theme.StyleTextBox(textBox);
+        else if (control is ComboBox comboBox)
+            Theme.StyleComboBox(comboBox);
     }
 
     private void Guardar(object? sender, EventArgs e)

@@ -80,8 +80,7 @@ public sealed class FrmHistorialVentas : BasePage
             new EstadoFiltro(EstadoVenta.Anulada, "Anulada")
         });
         cboEstado.SelectedIndex = 2;
-        cboEstado.BackColor = Theme.Surface;
-        cboEstado.ForeColor = Theme.TextPrimary;
+        Theme.StyleComboBox(cboEstado);
         filtros.Controls.Add(cboEstado);
 
         var btnFiltrar = new IconButton { Text = "Filtrar", AutoSize = true, Height = 36 };

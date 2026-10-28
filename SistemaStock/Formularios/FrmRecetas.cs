@@ -60,6 +60,7 @@ public sealed class FrmRecetas : BasePage
         productoBox.DisplayMember = nameof(Producto.Nombre);
         productoBox.ValueMember = nameof(Producto.Codigo);
         productoBox.DataSource = productos;
+        Theme.StyleComboBox(productoBox);
         productoBox.SelectedIndexChanged += (_, _) => CargarRecetaSeleccionada();
 
         var ingredientes = ingredientesRepositorio.GetAll()
@@ -69,6 +70,7 @@ public sealed class FrmRecetas : BasePage
         ingredienteBox.DisplayMember = nameof(Ingrediente.Nombre);
         ingredienteBox.ValueMember = nameof(Ingrediente.Id);
         ingredienteBox.DataSource = ingredientes;
+        Theme.StyleComboBox(ingredienteBox);
 
         var agregar = new IconButton { Text = "Agregar ingrediente", AutoSize = true };
         Theme.SetButtonIcon(agregar, IconChar.Plus);
@@ -89,6 +91,7 @@ public sealed class FrmRecetas : BasePage
         barra.Controls.Add(ingredienteBox);
         barra.Controls.Add(new Label { Text = "Cantidad", AutoSize = true, Padding = new Padding(0, 8, 0, 0), ForeColor = Theme.TextPrimary });
         barra.Controls.Add(cantidadBox);
+        Theme.StyleTextBox(cantidadBox);
         barra.Controls.Add(agregar);
         barra.Controls.Add(quitar);
         barra.Controls.Add(guardar);

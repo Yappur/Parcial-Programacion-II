@@ -128,11 +128,10 @@ public partial class FrmVentas : BasePage
             new TipoVentaOpcion(TipoVenta.Delivery, "Delivery")
         });
         cboTipoVenta.SelectedIndex = 0;
-        cboTipoVenta.BackColor = Theme.Surface;
-        cboTipoVenta.ForeColor = Theme.TextPrimary;
+        Theme.StyleComboBox(cboTipoVenta);
         cboTipoVenta.SelectedIndexChanged += (_, _) => ActualizarTipoVenta();
         barra.Controls.Add(cboTipoVenta);
-        Theme.SetButtonIcon(btnAbrirVenta, IconChar.CashRegister);
+        Theme.SetButtonIcon(btnAbrirVenta, IconChar.Plus);
         Theme.EstilizarBotonPrimario(btnAbrirVenta);
         btnAbrirVenta.Click += (_, _) => AbrirVenta();
         barra.Controls.Add(btnAbrirVenta);
@@ -152,17 +151,13 @@ public partial class FrmVentas : BasePage
     private void ConstruirPestanaDetalle()
     {
         cboVentasPendientes.Width = 260;
-        cboVentasPendientes.DropDownStyle = ComboBoxStyle.DropDownList;
         cboVentasPendientes.SelectedIndexChanged += VentaPendienteSeleccionada;
-        cboVentasPendientes.BackColor = Theme.Surface;
-        cboVentasPendientes.ForeColor = Theme.TextPrimary;
+        Theme.StyleComboBox(cboVentasPendientes);
         cboVentasPendientes.Margin = new Padding(4, 3, 12, 3);
 
         cboProducto.AccessibleName = "Buscar producto por código, nombre o precio";
         cboProducto.AccessibleDescription = "Escribí parte del código, el nombre o el precio para filtrar productos.";
-        cboProducto.BackColor = Theme.Surface;
-        cboProducto.ForeColor = Theme.TextPrimary;
-        cboProducto.Font = Theme.BodyFont;
+        Theme.StyleComboBox(cboProducto, keepEditable: true);
         cboProducto.Margin = new Padding(4, 3, 10, 3);
         cboProducto.TextUpdate += FiltrarProductos;
         cboProducto.SelectedIndexChanged += (_, _) => ActualizarEstadoBotones();
@@ -258,14 +253,12 @@ public partial class FrmVentas : BasePage
             new MedioPagoOpcion(MedioPago.Transferencia, "Transferencia")
         });
         cboMedioPago.SelectedIndexChanged += (_, _) => ActualizarEstadoBotones();
-        cboMedioPago.BackColor = Theme.Surface;
-        cboMedioPago.ForeColor = Theme.TextPrimary;
+        Theme.StyleComboBox(cboMedioPago);
         pie.Controls.Add(cboMedioPago);
         pie.Controls.Add(CrearEtiqueta("Notas"));
         txtNotas.PlaceholderText = "Propina, descuento, pago dividido...";
-        txtNotas.BackColor = Theme.Surface;
-        txtNotas.ForeColor = Theme.TextPrimary;
         pie.Controls.Add(txtNotas);
+        Theme.StyleTextBox(txtNotas);
         Theme.SetButtonIcon(btnCerrarVenta, IconChar.Check);
         Theme.EstilizarBotonPrimario(btnCerrarVenta);
         btnCerrarVenta.Enabled = false;

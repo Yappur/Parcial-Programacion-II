@@ -38,6 +38,7 @@ namespace SistemaStock.Formularios
                 var edit = new IconButton { Text = "Modificar / contraseña", AutoSize = true }; Theme.SetButtonIcon(edit, IconChar.UserEdit); Theme.EstilizarBotonSecundario(edit); edit.Click += (_, _) => EditUser(); top.Controls.Add(edit);
                 var deactivate = new IconButton { Text = "Desactivar", AutoSize = true }; Theme.SetButtonIcon(deactivate, IconChar.UserSlash); Theme.EstilizarBotonPeligro(deactivate); deactivate.Click += (_, _) => DeactivateUser(); top.Controls.Add(deactivate);
                 top.Controls.Add(search); search.TextChanged += (_, _) => RefreshUsers();
+                Theme.StyleTextBox(search);
             }
             else
                 top.Controls.Add(new Label { Text = "Tu rol no permite administrar usuarios.", AutoSize = true, Padding = new Padding(8), ForeColor = Theme.TextSecondary });
@@ -138,21 +139,13 @@ namespace SistemaStock.Formularios
 
         private static void AgregarCampo(FlowLayoutPanel panel, string texto, Control control)
         {
-            panel.Controls.Add(new Label { Text = texto, AutoSize = true, ForeColor = Theme.TextPrimary });
-            if (control is TextBox textBox)
-            {
-                textBox.BackColor = Theme.ObsidianBlack;
-                textBox.ForeColor = Theme.TextPrimary;
-                textBox.BorderStyle = BorderStyle.FixedSingle;
-            }
-            else if (control is ComboBox comboBox)
-            {
-                comboBox.BackColor = Theme.ObsidianBlack;
-                comboBox.ForeColor = Theme.TextPrimary;
-                comboBox.FlatStyle = FlatStyle.Flat;
-            }
-            control.Margin = new Padding(0, 3, 0, 10);
+            panel.Controls.Add(new Label { Text = texto, AutoSize = true, Margin = new Padding(0, 0, 0, 2), ForeColor = Theme.TextPrimary });
+            control.Margin = new Padding(0, 0, 0, 6);
             panel.Controls.Add(control);
+            if (control is TextBox textBox)
+                Theme.StyleTextBox(textBox);
+            else if (control is ComboBox comboBox)
+                Theme.StyleComboBox(comboBox);
         }
 
         private void Save(object? sender, EventArgs e)

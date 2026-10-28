@@ -121,13 +121,10 @@ namespace SistemaStock.Formularios
             txtUsuario = new TextBox()
             {
                 Location = new Point(38, 180),
-                Size = new Size(345, 38),
-                Font = new Font("Segoe UI", 12),
-                BackColor = Color.FromArgb(43, 44, 49),
-                ForeColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle
+                Size = new Size(345, 38)
             };
             panelLogin.Controls.Add(txtUsuario);
+            Theme.StyleTextBox(txtUsuario);
 
             panelLogin.Controls.Add(CrearEtiqueta("CONTRASEÑA", 38, 240));
 
@@ -135,13 +132,10 @@ namespace SistemaStock.Formularios
             {
                 Location = new Point(38, 270),
                 Size = new Size(345, 38),
-                Font = new Font("Segoe UI", 12),
-                BackColor = Color.FromArgb(43, 44, 49),
-                ForeColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
                 UseSystemPasswordChar = true
             };
             panelLogin.Controls.Add(txtContrasena);
+            Theme.StyleTextBox(txtContrasena);
 
             lblMensaje = new Label()
             {
@@ -160,6 +154,7 @@ namespace SistemaStock.Formularios
             };
             Theme.SetButtonIcon(btnIngresar, IconChar.RightToBracket);
             Theme.EstilizarBotonPrimario(btnIngresar);
+            Theme.CenterIconButtonContents(btnIngresar);
             btnIngresar.Click += btnIngresar_Click;
             panelLogin.Controls.Add(btnIngresar);
 
@@ -290,6 +285,7 @@ namespace SistemaStock.Formularios
             campo.Location = new Point(20, y + 22);
             campo.Size = new Size(320, 25);
             Controls.Add(campo);
+            Theme.StyleTextBox(campo);
         }
 
         private void CrearAdministrador(object? sender, EventArgs e)
