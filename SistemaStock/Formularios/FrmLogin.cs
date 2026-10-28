@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using SistemaStock.Datos;
 using SistemaStock.Estilos;
 using SistemaStock.Modelos.Usuarios;
+using FontAwesome.Sharp;
 
 namespace SistemaStock.Formularios
 {
@@ -151,18 +152,14 @@ namespace SistemaStock.Formularios
             };
             panelLogin.Controls.Add(lblMensaje);
 
-            Button btnIngresar = new()
+            IconButton btnIngresar = new()
             {
                 Text = "INGRESAR",
                 Location = new Point(38, 365),
-                Size = new Size(345, 48),
-                BackColor = naranja,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                Cursor = Cursors.Hand
+                Size = new Size(345, 48)
             };
-            btnIngresar.FlatAppearance.BorderSize = 0;
+            Theme.SetButtonIcon(btnIngresar, IconChar.RightToBracket);
+            Theme.EstilizarBotonPrimario(btnIngresar);
             btnIngresar.Click += btnIngresar_Click;
             panelLogin.Controls.Add(btnIngresar);
 
@@ -269,12 +266,14 @@ namespace SistemaStock.Formularios
             AgregarCampo("Contraseña (mínimo 8 caracteres)", txtPassword, 140);
             txtPassword.UseSystemPasswordChar = true;
 
-            Button btnCrear = new()
+            IconButton btnCrear = new()
             {
                 Text = "Crear administrador",
                 Location = new Point(20, 220),
                 Size = new Size(320, 40)
             };
+            Theme.SetButtonIcon(btnCrear, IconChar.UserPlus);
+            Theme.EstilizarBotonPrimario(btnCrear);
             btnCrear.Click += CrearAdministrador;
             Controls.Add(btnCrear);
         }

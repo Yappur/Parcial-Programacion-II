@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using SistemaStock.Datos;
 using SistemaStock.Estilos;
 using SistemaStock.Modelos.Usuarios;
+using FontAwesome.Sharp;
 
 namespace SistemaStock.Formularios
 {
@@ -32,9 +33,10 @@ namespace SistemaStock.Formularios
                 top.Controls.Add(new Label { Text = $"Sesión: {user.FullName} | Rol: {user.Role}", AutoSize = true, Padding = new Padding(0, 8, 12, 0), ForeColor = Theme.TextSecondary });
             if (user is not null && UserPermissions.CanManageUsers(user))
             {
-                var add = new Button { Text = "Crear usuario", AutoSize = true }; add.Click += (_, _) => CreateUser(); top.Controls.Add(add);
-                var edit = new Button { Text = "Modificar / contraseña", AutoSize = true }; edit.Click += (_, _) => EditUser(); top.Controls.Add(edit);
-                var deactivate = new Button { Text = "Desactivar", AutoSize = true }; deactivate.Click += (_, _) => DeactivateUser(); top.Controls.Add(deactivate);
+                var add = new IconButton { Text = "Crear usuario", AutoSize = true }; Theme.SetButtonIcon(add, IconChar.UserPlus); add.Click += (_, _) => CreateUser(); top.Controls.Add(add);
+                Theme.EstilizarBotonPrimario(add);
+                var edit = new IconButton { Text = "Modificar / contraseña", AutoSize = true }; Theme.SetButtonIcon(edit, IconChar.UserEdit); Theme.EstilizarBotonSecundario(edit); edit.Click += (_, _) => EditUser(); top.Controls.Add(edit);
+                var deactivate = new IconButton { Text = "Desactivar", AutoSize = true }; Theme.SetButtonIcon(deactivate, IconChar.UserSlash); Theme.EstilizarBotonPeligro(deactivate); deactivate.Click += (_, _) => DeactivateUser(); top.Controls.Add(deactivate);
                 top.Controls.Add(search); search.TextChanged += (_, _) => RefreshUsers();
             }
             else
@@ -124,11 +126,9 @@ namespace SistemaStock.Formularios
                 activeBox.Margin = new Padding(0, 3, 0, 10);
                 panel.Controls.Add(activeBox);
             }
-            var save = new Button { Text = "Guardar", Width = 280, Height = 38 };
-            save.BackColor = Theme.BlazeOrange;
-            save.ForeColor = Theme.TextPrimary;
-            save.FlatStyle = FlatStyle.Flat;
-            save.FlatAppearance.BorderSize = 0;
+            var save = new IconButton { Text = "Guardar", Width = 280, Height = 38 };
+            Theme.SetButtonIcon(save, IconChar.FloppyDisk);
+            Theme.EstilizarBotonPrimario(save);
             save.Click += Save;
             panel.Controls.Add(save);
             Controls.Add(panel);

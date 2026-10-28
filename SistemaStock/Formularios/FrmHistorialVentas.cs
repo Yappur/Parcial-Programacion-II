@@ -2,6 +2,7 @@ using SistemaStock.Datos;
 using SistemaStock.Estilos;
 using SistemaStock.Modelos;
 using SistemaStock.Modelos.Usuarios;
+using FontAwesome.Sharp;
 
 namespace SistemaStock.Formularios;
 
@@ -83,8 +84,9 @@ public sealed class FrmHistorialVentas : BasePage
         cboEstado.ForeColor = Theme.TextPrimary;
         filtros.Controls.Add(cboEstado);
 
-        var btnFiltrar = new BotonTema { Text = "Filtrar", AutoSize = true, Height = 36 };
-        Theme.EstilizarBoton(btnFiltrar);
+        var btnFiltrar = new IconButton { Text = "Filtrar", AutoSize = true, Height = 36 };
+        Theme.SetButtonIcon(btnFiltrar, IconChar.Filter);
+        Theme.EstilizarBotonPrimario(btnFiltrar);
         btnFiltrar.Click += (_, _) => CargarVentas();
         filtros.Controls.Add(btnFiltrar);
 

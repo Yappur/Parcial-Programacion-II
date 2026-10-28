@@ -1,4 +1,5 @@
 using System.Drawing;
+using FontAwesome.Sharp;
 using SistemaStock.Formularios;
 using SistemaStock.Modelos.Usuarios;
 
@@ -77,14 +78,12 @@ public class BaseFormSidebar : BaseForm
         if (UserPermissions.CanManageUsers(usuarioActual))
             navegacion.Controls.Add(CrearBoton("Historial de ventas", PaginaApp.HistorialVentas));
 
-        var cerrarSesion = new Button
+        var cerrarSesion = new IconButton
         {
-            Text = "Cerrar sesión", Dock = DockStyle.Fill, Margin = Padding.Empty,
-            FlatStyle = FlatStyle.Flat, BackColor = Theme.Surface,
-            ForeColor = Theme.TextPrimary, Font = Theme.BodyFont, Cursor = Cursors.Hand
+            Text = "Cerrar sesión", Dock = DockStyle.Fill, Margin = Padding.Empty
         };
-        cerrarSesion.FlatAppearance.BorderColor = Theme.BlazeOrange;
-        cerrarSesion.FlatAppearance.BorderSize = 1;
+        Theme.SetButtonIcon(cerrarSesion, IconChar.RightFromBracket, 22);
+        Theme.EstilizarBotonCerrarSesion(cerrarSesion);
         cerrarSesion.Click += (_, _) => { DialogResult = DialogResult.Retry; Close(); };
         layout.Controls.Add(cerrarSesion, 0, 2);
 
@@ -97,9 +96,22 @@ public class BaseFormSidebar : BaseForm
         Controls.Add(sidebar);
     }
 
-    private Button CrearBoton(string texto, PaginaApp destino)
+    private IconButton CrearBoton(string texto, PaginaApp destino)
     {
-        var boton = new Button { Text = texto, Width = 236, Height = 48, Margin = new Padding(0, 0, 0, 8) };
+        IconChar icono = destino switch
+        {
+            PaginaApp.Dashboard => IconChar.House,
+            PaginaApp.Ventas => IconChar.CashRegister,
+            PaginaApp.Productos => IconChar.BoxesStacked,
+            PaginaApp.Ingredientes => IconChar.Carrot,
+            PaginaApp.Recetas => IconChar.BookOpen,
+            PaginaApp.Mesas => IconChar.Chair,
+            PaginaApp.Usuarios => IconChar.Users,
+            PaginaApp.HistorialVentas => IconChar.ClockRotateLeft,
+            _ => throw new ArgumentOutOfRangeException(nameof(destino))
+        };
+        var boton = new IconButton { Text = texto, Width = 236, Height = 48, Margin = new Padding(0, 0, 0, 8) };
+        Theme.SetButtonIcon(boton, icono, 22);
         Theme.StyleNavigationButton(boton, false);
         boton.Click += (_, _) => Navegar(destino);
         botones.Add(destino, boton);
