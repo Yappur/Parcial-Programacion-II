@@ -31,6 +31,26 @@ internal sealed class ProductoRepositorio
         return productos;
     }
 
+    public List<Producto> GetLowStock()
+    {
+        using var db = Database.OpenConnection();
+        using var cmd = new MySqlCommand("""
+            SELECT p.codigo, p.nombre, p.precio, p.tipo_stock, p.stock, p.stock_minimo,
+                   p.activo, p.categoria_id, c.nombre AS categoria_nombre,
+                   p.stock AS stock_disponible
+            FROM productos p
+            INNER JOIN categorias c ON c.id = p.categoria_id
+            WHERE p.activo = TRUE
+              AND p.tipo_stock = 'DIRECTO'
+              AND p.stock <= p.stock_minimo
+            ORDER BY p.stock ASC, p.nombre;
+            """, db);
+        using var reader = cmd.ExecuteReader();
+        var productos = new List<Producto>();
+        while (reader.Read()) productos.Add(LeerProducto(reader));
+        return productos;
+    }
+
     public void Create(Producto producto)
     {
         ValidarStock(producto);

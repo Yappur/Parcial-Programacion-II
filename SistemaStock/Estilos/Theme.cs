@@ -278,6 +278,27 @@ public static class Theme
         grid.Invalidate();
     }
 
+    public static void StyleTabControl(TabControl tabs)
+    {
+        tabs.DrawMode = TabDrawMode.OwnerDrawFixed;
+        tabs.ItemSize = new Size(150, 36);
+        tabs.SizeMode = TabSizeMode.Fixed;
+        tabs.DrawItem -= DrawThemedTab;
+        tabs.DrawItem += DrawThemedTab;
+    }
+
+    private static void DrawThemedTab(object? sender, DrawItemEventArgs e)
+    {
+        if (sender is not TabControl tabs || e.Index < 0) return;
+        bool active = e.Index == tabs.SelectedIndex;
+        Color background = active ? SurfaceRaised : ObsidianBlack;
+        using var brush = new SolidBrush(background);
+        e.Graphics.FillRectangle(brush, e.Bounds);
+        TextRenderer.DrawText(e.Graphics, tabs.TabPages[e.Index].Text, active ? GridHeaderFont : BodyFont,
+            e.Bounds, active ? TextPrimary : TextSecondary,
+            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+    }
+
     private static void GridMouseMove(object? sender, MouseEventArgs e)
     {
         if (sender is not DataGridView grid || !GridHoverStates.TryGetValue(grid, out GridHoverState state))
