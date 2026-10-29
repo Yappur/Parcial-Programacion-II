@@ -30,6 +30,7 @@ Motor InnoDB, `utf8mb4`. Los `CHECK` solo se aplican de verdad desde MySQL 8.0.1
 
 ```
 usuarios, categorias           (ya existentes)
+actividades                    registro de acciones del sistema
 mesas                          numero, capacidad, activo
 ingredientes                   nombre, unidad (un/g/ml), stock DECIMAL, stock_minimo, activo
 productos                      codigo, nombre, precio, categoria_id, tipo_stock, stock?, stock_minimo?, activo
@@ -49,7 +50,7 @@ productos  1──N detalle_venta N──1 ventas N──1 mesas
 
 Respetar las claves foráneas. Este es el orden de `Initialize()`:
 
-`usuarios`, `categorias`, `mesas`, `ingredientes`, `productos`, `recetas`, `ventas`, `detalle_venta` (y `movimientos_stock` si se implementa).
+`usuarios`, `actividades`, `categorias`, `mesas`, `ingredientes`, `productos`, `recetas`, `ventas`, `detalle_venta` (y `movimientos_stock` si se implementa).
 
 Cada tabla se agrega cuando el equipo llega a su paso del orden de trabajo (`../SKILL.md`, sección 5), no antes.
 
@@ -92,6 +93,24 @@ CREATE TABLE IF NOT EXISTS categorias (
     nombre VARCHAR(100) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 ```
+
+## actividades
+
+```sql
+CREATE TABLE IF NOT EXISTS actividades (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NULL,
+    tipo VARCHAR(20) NOT NULL,
+    accion VARCHAR(100) NOT NULL,
+    detalle VARCHAR(255) NOT NULL,
+    precio DECIMAL(10,2) NULL,
+    fecha_hora DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX ix_actividades_fecha (fecha_hora),
+    CONSTRAINT fk_actividades_usuarios FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+) ENGINE=InnoDB;
+```
+
+Registra las altas, modificaciones, bajas y operaciones de venta para mostrarlas en “Actividad reciente”. `usuario_id` puede ser nulo para acciones previas a iniciar sesión, como crear el primer administrador. `precio` se completa para operaciones de venta con importe asociado.
 
 ## mesas
 

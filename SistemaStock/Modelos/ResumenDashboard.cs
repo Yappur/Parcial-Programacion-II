@@ -26,5 +26,5 @@ public sealed class VentaDashboard
     public string Tipo { get; init; } = "";
     public decimal Total { get; init; }
     public string Estado { get; init; } = "";
-    public string Actividad => $"Venta #{Id} · {Tipo} · {Estado} — {Total:C2}";
+    public string Actividad => $"Venta #{Id} · {Estado}{Environment.NewLine}{Tipo} · {Total:C2}";
 }

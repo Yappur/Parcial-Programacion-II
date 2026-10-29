@@ -6,7 +6,7 @@ Todo lo visual del sistema Chachín. Las reglas de oro están en `../SKILL.md`, 
 
 - `Estilos/Theme.cs`: **única fuente** de colores, fuentes y estilos de controles.
 - `Estilos/BaseForm.cs`: formulario base (tamaño mínimo, tema). Los diálogos heredan de él.
-- `Estilos/BaseFormSidebar.cs`: ventana principal única. Construye el sidebar **por código**, tiene el enum `PaginaApp` y el método `Navegar(PaginaApp)` que crea la página, la acopla a `PageContent` y libera la anterior. También define `BasePage` (`UserControl` con título y `AddEmptyGrid()`).
+- `Estilos/BaseFormSidebar.cs`: ventana principal única. Construye el sidebar **por código**, tiene el enum `PaginaApp` y el método `Navegar(PaginaApp)` que crea la página, la acopla a `PageContent` y libera la anterior. También define `BasePage` (`UserControl` con título, fecha y hora compartidas, y `AddEmptyGrid()`).
 - Las pantallas (`FrmDashboard`, `FrmProductos`, `FrmIngredientes`, `FrmRecetas`, `FrmMesas`, `FrmUsers`, `FrmVentas`, `FrmHistorialVentas`) son **`UserControl`** (heredan de `BasePage` o de `UserControl`), aunque se llamen `Frm...`. Se muestran dentro de `PageContent`, nunca con `ShowDialog()`.
 - Las altas y ediciones son diálogos (`ProductoEditForm`, `UserEditForm`, etc.) que heredan de `BaseForm`. `ShowDialog()` es solo para ellos.
 - Para agregar una pantalla: sumar un valor a `PaginaApp`, un botón en `ConstruirSidebar()` y un caso en el `switch` de `Navegar`.
