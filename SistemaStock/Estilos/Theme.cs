@@ -15,9 +15,14 @@ public static class Theme
     public static readonly Color BlazeOrange = Color.FromArgb(242, 112, 42);
     public static readonly Color Danger = Color.FromArgb(190, 55, 48);
     public static readonly Color Warning = Color.FromArgb(225, 168, 54);
+    public static readonly Color StatusDanger = Color.FromArgb(239, 83, 80);
+    public static readonly Color StatusSuccess = Color.FromArgb(76, 175, 80);
     public static readonly Color TextPrimary = Color.FromArgb(245, 245, 245);
     public static readonly Color TextSecondary = Color.FromArgb(185, 188, 194);
     public static readonly Color GridLine = Color.FromArgb(58, 60, 66);
+
+    public const int StockChartRowHeight = 40;
+    public const int StockChartAxisHeight = 120;
 
     public static readonly Font BodyFont = new("Segoe UI", 10F, FontStyle.Regular);
     public static readonly Font HeadingFont = new("Segoe UI", 22F, FontStyle.Bold);
@@ -278,6 +283,9 @@ public static class Theme
         grid.RowHeadersVisible = false;
         grid.RowTemplate.Height = 36;
         grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        grid.AllowUserToResizeRows = false;
+        grid.AllowUserToResizeColumns = false;
+        grid.AllowUserToOrderColumns = false;
         grid.AllowUserToAddRows = false;
         grid.AllowUserToDeleteRows = false;
         grid.ReadOnly = true;

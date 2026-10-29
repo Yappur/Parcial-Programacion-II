@@ -172,9 +172,22 @@ public partial class FrmVentas : BasePage
         barra.Controls.Add(lblAyudaMesas);
 
         Theme.StyleGrid(gridMesas);
+        gridMesas.CellFormatting += FormatearEstadoMesa;
         gridMesas.SelectionChanged += (_, _) => ActualizarEstadoBotones();
         pestañaAbrir.Controls.Add(gridMesas);
         pestañaAbrir.Controls.Add(barra);
+    }
+
+    private void FormatearEstadoMesa(object? sender, DataGridViewCellFormattingEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.ColumnIndex < 0 ||
+            gridMesas.Columns[e.ColumnIndex].Name != nameof(MesaVenta.Estado))
+            return;
+
+        if (gridMesas.Rows[e.RowIndex].DataBoundItem is not MesaVenta mesa)
+            return;
+
+        e.CellStyle.ForeColor = mesa.Ocupada ? Theme.StatusDanger : Theme.StatusSuccess;
     }
 
     private void ConstruirPestanaDetalle()

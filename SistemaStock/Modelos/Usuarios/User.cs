@@ -12,4 +12,6 @@ public sealed class User
 public static class UserPermissions
 {
     public static bool CanManageUsers(User user) => user.Role == "Administrador";
+
+    public static bool CanViewReports(User user) => CanManageUsers(user);
 }
