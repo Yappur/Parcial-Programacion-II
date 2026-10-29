@@ -16,8 +16,11 @@ public sealed class FrmReportes : BasePage
     private readonly Label lblResumenVentas = CrearEstado();
     private readonly Label lblEstadoVentas = CrearEstado();
     private readonly Label lblEstadoStock = CrearEstado();
-    private readonly TabControl pestañas = new() { Dock = DockStyle.Fill };
     private bool stockCargado;
+    private Panel? paginaVentas;
+    private Panel? paginaStock;
+    private Button? btnPestanaVentas;
+    private Button? btnPestanaStock;
 
     public FrmReportes()
     {
@@ -30,7 +33,7 @@ public sealed class FrmReportes : BasePage
 
     private void ConstruirInterfaz()
     {
-        var paginaVentas = CrearPagina("Ventas por período");
+        paginaVentas = CrearPagina();
         var controlesFecha = new FlowLayoutPanel
         {
             Dock = DockStyle.Top, AutoSize = true, WrapContents = true,
@@ -50,18 +53,36 @@ public sealed class FrmReportes : BasePage
         paginaVentas.Controls.Add(lblResumenVentas);
         paginaVentas.Controls.Add(controlesFecha);
 
-        var paginaStock = CrearPagina("Productos con bajo stock");
+        paginaStock = CrearPagina();
+        paginaStock.Visible = false;
         paginaStock.Controls.Add(gridStock);
         paginaStock.Controls.Add(lblEstadoStock);
 
-        pestañas.TabPages.Add(paginaVentas);
-        pestañas.TabPages.Add(paginaStock);
-        Theme.StyleTabControl(pestañas);
-        pestañas.SelectedIndexChanged += (_, _) =>
+        var barra = new FlowLayoutPanel
         {
-            if (pestañas.SelectedIndex == 1 && !stockCargado) CargarStockBajo();
+            Dock = DockStyle.Top,
+            Height = 44,
+            WrapContents = false,
+            BackColor = Theme.DeepCharcoal,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty
         };
-        PageContent.Controls.Add(pestañas);
+        btnPestanaVentas = new Button { Text = "Ventas por período", Width = 170, Height = 36 };
+        btnPestanaStock = new Button { Text = "Productos con bajo stock", Width = 200, Height = 36 };
+        Theme.StyleTabButton(btnPestanaVentas, true);
+        Theme.StyleTabButton(btnPestanaStock, false);
+        btnPestanaVentas.Margin = new Padding(0, 0, 8, 4);
+        btnPestanaStock.Margin = new Padding(0, 0, 8, 4);
+        btnPestanaVentas.Click += (_, _) => MostrarReporte(ventas: true);
+        btnPestanaStock.Click += (_, _) => MostrarReporte(ventas: false);
+
+        var contenido = new Panel { Dock = DockStyle.Fill, BackColor = Theme.DeepCharcoal };
+        contenido.Controls.Add(paginaStock);
+        contenido.Controls.Add(paginaVentas);
+        PageContent.Controls.Add(contenido);
+        PageContent.Controls.Add(barra);
+        barra.Controls.Add(btnPestanaVentas);
+        barra.Controls.Add(btnPestanaStock);
 
         Theme.StyleGrid(gridVentas);
         Theme.StyleGrid(gridStock);
@@ -79,6 +100,19 @@ public sealed class FrmReportes : BasePage
         fechaDesde.ForeColor = Theme.TextPrimary;
         fechaHasta.BackColor = Theme.Surface;
         fechaHasta.ForeColor = Theme.TextPrimary;
+    }
+
+    private void MostrarReporte(bool ventas)
+    {
+        if (paginaVentas is null || paginaStock is null || btnPestanaVentas is null || btnPestanaStock is null)
+            return;
+
+        paginaVentas.Visible = ventas;
+        paginaStock.Visible = !ventas;
+        Theme.StyleTabButton(btnPestanaVentas, ventas);
+        Theme.StyleTabButton(btnPestanaStock, !ventas);
+        if (!ventas && !stockCargado)
+            CargarStockBajo();
     }
 
     private void CargarVentas()
@@ -172,8 +206,9 @@ public sealed class FrmReportes : BasePage
         if (formato is not null) columna.DefaultCellStyle.Format = formato;
     }
 
-    private static TabPage CrearPagina(string texto) => new(texto)
+    private static Panel CrearPagina() => new()
     {
+        Dock = DockStyle.Fill,
         BackColor = Theme.DeepCharcoal,
         ForeColor = Theme.TextPrimary,
         Padding = new Padding(8)

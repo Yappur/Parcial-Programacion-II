@@ -59,6 +59,21 @@ public static class Theme
         ApplyNavigationButtonState(button, active, false);
     }
 
+    public static void StyleTabButton(Button button, bool active)
+    {
+        button.FlatStyle = FlatStyle.Flat;
+        button.UseVisualStyleBackColor = false;
+        button.FlatAppearance.BorderSize = 0;
+        button.FlatAppearance.MouseOverBackColor = active ? PrimaryHover : SurfaceRaised;
+        button.FlatAppearance.MouseDownBackColor = active ? PrimaryHover : SurfaceRaised;
+        button.BackColor = active ? BlazeOrange : ObsidianBlack;
+        button.ForeColor = active ? TextPrimary : TextSecondary;
+        button.Font = active ? ActiveNavigationFont : NavigationFont;
+        button.TextAlign = ContentAlignment.MiddleCenter;
+        button.Padding = new Padding(8, 0, 8, 0);
+        button.Cursor = Cursors.Hand;
+    }
+
     private static void NavigationButtonMouseEnter(object? sender, EventArgs e)
     {
         if (sender is Button button)
