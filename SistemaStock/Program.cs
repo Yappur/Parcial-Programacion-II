@@ -1,4 +1,6 @@
 using SistemaStock.Datos;
+using LiveChartsCore;
+using LiveChartsCore.SkiaSharpView;
 
 namespace SistemaStock
 {
@@ -7,6 +9,7 @@ namespace SistemaStock
         [STAThread]
         static void Main()
         {
+            LiveCharts.Configure(settings => settings.UseDefaults());
             ApplicationConfiguration.Initialize();
 
             // Aseguramos que la base de datos y la tabla 'usuarios' existan

@@ -15,9 +15,14 @@ public static class Theme
     public static readonly Color BlazeOrange = Color.FromArgb(242, 112, 42);
     public static readonly Color Danger = Color.FromArgb(190, 55, 48);
     public static readonly Color Warning = Color.FromArgb(225, 168, 54);
+    public static readonly Color StatusDanger = Color.FromArgb(239, 83, 80);
+    public static readonly Color StatusSuccess = Color.FromArgb(76, 175, 80);
     public static readonly Color TextPrimary = Color.FromArgb(245, 245, 245);
     public static readonly Color TextSecondary = Color.FromArgb(185, 188, 194);
     public static readonly Color GridLine = Color.FromArgb(58, 60, 66);
+
+    public const int StockChartRowHeight = 40;
+    public const int StockChartAxisHeight = 120;
 
     public static readonly Font BodyFont = new("Segoe UI", 10F, FontStyle.Regular);
     public static readonly Font HeadingFont = new("Segoe UI", 22F, FontStyle.Bold);
@@ -57,6 +62,21 @@ public static class Theme
         button.MouseLeave -= NavigationButtonMouseLeave;
         button.MouseLeave += NavigationButtonMouseLeave;
         ApplyNavigationButtonState(button, active, false);
+    }
+
+    public static void StyleTabButton(Button button, bool active)
+    {
+        button.FlatStyle = FlatStyle.Flat;
+        button.UseVisualStyleBackColor = false;
+        button.FlatAppearance.BorderSize = 0;
+        button.FlatAppearance.MouseOverBackColor = active ? PrimaryHover : SurfaceRaised;
+        button.FlatAppearance.MouseDownBackColor = active ? PrimaryHover : SurfaceRaised;
+        button.BackColor = active ? BlazeOrange : ObsidianBlack;
+        button.ForeColor = active ? TextPrimary : TextSecondary;
+        button.Font = active ? ActiveNavigationFont : NavigationFont;
+        button.TextAlign = ContentAlignment.MiddleCenter;
+        button.Padding = new Padding(8, 0, 8, 0);
+        button.Cursor = Cursors.Hand;
     }
 
     private static void NavigationButtonMouseEnter(object? sender, EventArgs e)
@@ -263,6 +283,9 @@ public static class Theme
         grid.RowHeadersVisible = false;
         grid.RowTemplate.Height = 36;
         grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        grid.AllowUserToResizeRows = false;
+        grid.AllowUserToResizeColumns = false;
+        grid.AllowUserToOrderColumns = false;
         grid.AllowUserToAddRows = false;
         grid.AllowUserToDeleteRows = false;
         grid.ReadOnly = true;
@@ -276,6 +299,27 @@ public static class Theme
         grid.RowPrePaint -= GridRowPrePaint;
         grid.RowPrePaint += GridRowPrePaint;
         grid.Invalidate();
+    }
+
+    public static void StyleTabControl(TabControl tabs)
+    {
+        tabs.DrawMode = TabDrawMode.OwnerDrawFixed;
+        tabs.ItemSize = new Size(150, 36);
+        tabs.SizeMode = TabSizeMode.Fixed;
+        tabs.DrawItem -= DrawThemedTab;
+        tabs.DrawItem += DrawThemedTab;
+    }
+
+    private static void DrawThemedTab(object? sender, DrawItemEventArgs e)
+    {
+        if (sender is not TabControl tabs || e.Index < 0) return;
+        bool active = e.Index == tabs.SelectedIndex;
+        Color background = active ? SurfaceRaised : ObsidianBlack;
+        using var brush = new SolidBrush(background);
+        e.Graphics.FillRectangle(brush, e.Bounds);
+        TextRenderer.DrawText(e.Graphics, tabs.TabPages[e.Index].Text, active ? GridHeaderFont : BodyFont,
+            e.Bounds, active ? TextPrimary : TextSecondary,
+            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
     }
 
     private static void GridMouseMove(object? sender, MouseEventArgs e)

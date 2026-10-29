@@ -22,6 +22,7 @@ public partial class FrmProductos : BasePage
         InitializeComponent();
         Text = "Chachín | Productos";
         Theme.StyleGrid(grid);
+        grid.CellFormatting += FormatearEstadoStock;
         AddPageTitle("Productos", "Administración de productos del sistema");
 
         var top = new FlowLayoutPanel
@@ -119,6 +120,24 @@ public partial class FrmProductos : BasePage
         if (grid.Columns[nameof(Producto.CategoriaNombre)] is { } categoria) categoria.HeaderText = "Categoría";
         if (grid.Columns[nameof(Producto.Activo)] is { } activo) activo.HeaderText = "Activo";
         if (grid.Columns[nameof(Producto.CategoriaId)] is { } categoriaId) categoriaId.Visible = false;
+    }
+
+    private void FormatearEstadoStock(object? sender, DataGridViewCellFormattingEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.ColumnIndex < 0 ||
+            grid.Rows[e.RowIndex].DataBoundItem is not Producto producto)
+            return;
+
+        string columna = grid.Columns[e.ColumnIndex].Name;
+        bool stockBajo = producto.TipoStock == TipoStock.Directo &&
+            producto.Stock is int stock && producto.StockMinimo is int minimo && stock <= minimo;
+
+        if (columna == nameof(Producto.StockDisponible))
+            e.CellStyle.ForeColor = stockBajo
+                ? Theme.StatusDanger
+                : producto.StockDisponible > 0 ? Theme.StatusSuccess : grid.DefaultCellStyle.ForeColor;
+        else if (columna == nameof(Producto.Stock) && stockBajo)
+            e.CellStyle.ForeColor = Theme.StatusDanger;
     }
 
     private void CrearProducto()

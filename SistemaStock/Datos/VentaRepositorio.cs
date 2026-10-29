@@ -121,6 +121,47 @@ internal sealed class VentaRepositorio
         return ventas;
     }
 
+    public List<VentaHistorial> ListarVentasCerradasPorPeriodo(DateTime desde, DateTime hasta)
+    {
+        if (desde.Date > hasta.Date)
+            throw new ArgumentException("La fecha inicial no puede ser posterior a la fecha final.");
+
+        using var cn = Database.OpenConnection();
+        using var cmd = new MySqlCommand("""
+            SELECT v.id, v.fecha_hora, v.fecha_cierre, v.tipo_venta, m.numero AS mesa,
+                   u.nombre_completo AS atendio, v.total, v.medio_pago, v.estado, v.notas
+            FROM ventas v
+            LEFT JOIN mesas m ON m.id = v.mesa_id
+            INNER JOIN usuarios u ON u.id = v.usuario_id
+            WHERE v.estado = 'CERRADA'
+              AND v.fecha_cierre >= @desde
+              AND v.fecha_cierre < @hasta
+            ORDER BY v.fecha_cierre DESC, v.id DESC;
+            """, cn);
+        cmd.Parameters.AddWithValue("@desde", desde.Date);
+        cmd.Parameters.AddWithValue("@hasta", hasta.Date.AddDays(1));
+
+        using var rd = cmd.ExecuteReader();
+        var ventas = new List<VentaHistorial>();
+        while (rd.Read())
+        {
+            ventas.Add(new VentaHistorial
+            {
+                Id = rd.GetInt32("id"),
+                FechaHora = rd.GetDateTime("fecha_hora"),
+                FechaCierre = rd.IsDBNull(rd.GetOrdinal("fecha_cierre")) ? null : rd.GetDateTime("fecha_cierre"),
+                TipoVenta = rd.GetString("tipo_venta"),
+                Mesa = rd.IsDBNull(rd.GetOrdinal("mesa")) ? null : rd.GetInt32("mesa"),
+                Atendio = rd.GetString("atendio"),
+                Total = rd.GetDecimal("total"),
+                MedioPago = rd.IsDBNull(rd.GetOrdinal("medio_pago")) ? null : rd.GetString("medio_pago"),
+                Estado = rd.GetString("estado"),
+                Notas = rd.IsDBNull(rd.GetOrdinal("notas")) ? null : rd.GetString("notas")
+            });
+        }
+        return ventas;
+    }
+
     public void AgregarLinea(int ventaId, int productoCodigo, int cantidad)
     {
         if (ventaId <= 0)

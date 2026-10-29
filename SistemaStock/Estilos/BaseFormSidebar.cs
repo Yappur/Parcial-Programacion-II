@@ -14,7 +14,8 @@ public enum PaginaApp
     Mesas,
     Usuarios,
     Ventas,
-    HistorialVentas
+    HistorialVentas,
+    Reportes
 }
 
 /// <summary>Ventana principal única: conserva el sidebar y aloja una página a la vez.</summary>
@@ -75,6 +76,8 @@ public class BaseFormSidebar : BaseForm
         navegacion.Controls.Add(CrearBoton("Recetas", PaginaApp.Recetas));
         navegacion.Controls.Add(CrearBoton("Mesas", PaginaApp.Mesas));
         navegacion.Controls.Add(CrearBoton("Usuarios", PaginaApp.Usuarios));
+        if (UserPermissions.CanViewReports(usuarioActual))
+            navegacion.Controls.Add(CrearBoton("Reportes", PaginaApp.Reportes));
         if (UserPermissions.CanManageUsers(usuarioActual))
             navegacion.Controls.Add(CrearBoton("Historial de ventas", PaginaApp.HistorialVentas));
 
@@ -108,6 +111,7 @@ public class BaseFormSidebar : BaseForm
             PaginaApp.Mesas => IconChar.Chair,
             PaginaApp.Usuarios => IconChar.Users,
             PaginaApp.HistorialVentas => IconChar.ClockRotateLeft,
+            PaginaApp.Reportes => IconChar.ChartColumn,
             _ => throw new ArgumentOutOfRangeException(nameof(destino))
         };
         var boton = new IconButton { Text = texto, Width = 236, Height = 48, Margin = new Padding(0, 0, 0, 8) };
@@ -120,6 +124,15 @@ public class BaseFormSidebar : BaseForm
 
     protected void Navegar(PaginaApp destino)
     {
+        if (destino == PaginaApp.Reportes && !UserPermissions.CanViewReports(usuarioActual))
+        {
+            MessageBox.Show("No tenés permiso para acceder a los reportes.",
+                "Acceso denegado", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            if (paginaActiva is not null && paginaActiva != PaginaApp.Dashboard)
+                Navegar(PaginaApp.Dashboard);
+            return;
+        }
+
         if (destino == PaginaApp.HistorialVentas && !UserPermissions.CanManageUsers(usuarioActual))
             return;
 
@@ -136,6 +149,7 @@ public class BaseFormSidebar : BaseForm
             PaginaApp.Usuarios => new FrmUsers(usuarioActual),
             PaginaApp.Ventas => new FrmVentas(usuarioActual),
             PaginaApp.HistorialVentas => new FrmHistorialVentas(usuarioActual),
+            PaginaApp.Reportes => new FrmReportes(usuarioActual),
             _ => throw new ArgumentOutOfRangeException(nameof(destino))
         };
 

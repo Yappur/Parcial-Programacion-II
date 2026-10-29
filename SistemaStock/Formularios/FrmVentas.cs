@@ -13,9 +13,10 @@ public partial class FrmVentas : BasePage
     private readonly ProductoRepositorio productoRepositorio = new();
     private readonly User? usuario;
 
-    private readonly TabControl pestañas = new() { Dock = DockStyle.Fill, BackColor = Theme.DeepCharcoal, ForeColor = Theme.TextPrimary };
-    private readonly TabPage pestañaAbrir = new("Abrir venta");
-    private readonly TabPage pestañaDetalle = new("Venta pendiente");
+    private readonly Panel pestañaAbrir = new() { Dock = DockStyle.Fill, BackColor = Theme.DeepCharcoal };
+    private readonly Panel pestañaDetalle = new() { Dock = DockStyle.Fill, BackColor = Theme.DeepCharcoal, Visible = false };
+    private readonly Button btnPestanaAbrir = new() { Text = "Abrir venta", Width = 150, Height = 36 };
+    private readonly Button btnPestanaDetalle = new() { Text = "Venta pendiente", Width = 150, Height = 36 };
 
     private readonly ComboBox cboTipoVenta = new()
     {
@@ -85,14 +86,47 @@ public partial class FrmVentas : BasePage
 
         ConstruirPestanaApertura();
         ConstruirPestanaDetalle();
-        pestañas.TabPages.Add(pestañaAbrir);
-        pestañas.TabPages.Add(pestañaDetalle);
-        PageContent.Controls.Add(pestañas);
+        ConstruirNavegacionPestanas();
 
         CargarMesas();
         CargarProductos();
         CargarVentasPendientes();
         ActualizarEstadoBotones();
+    }
+
+    private void ConstruirNavegacionPestanas()
+    {
+        var barra = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 44,
+            WrapContents = false,
+            BackColor = Theme.DeepCharcoal,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty
+        };
+        Theme.StyleTabButton(btnPestanaAbrir, true);
+        Theme.StyleTabButton(btnPestanaDetalle, false);
+        btnPestanaAbrir.Margin = new Padding(0, 0, 8, 4);
+        btnPestanaDetalle.Margin = new Padding(0, 0, 8, 4);
+        btnPestanaAbrir.Click += (_, _) => MostrarPestanaDetalle(false);
+        btnPestanaDetalle.Click += (_, _) => MostrarPestanaDetalle(true);
+        barra.Controls.Add(btnPestanaAbrir);
+        barra.Controls.Add(btnPestanaDetalle);
+
+        var contenido = new Panel { Dock = DockStyle.Fill, BackColor = Theme.DeepCharcoal };
+        contenido.Controls.Add(pestañaDetalle);
+        contenido.Controls.Add(pestañaAbrir);
+        PageContent.Controls.Add(contenido);
+        PageContent.Controls.Add(barra);
+    }
+
+    private void MostrarPestanaDetalle(bool mostrarDetalle)
+    {
+        pestañaAbrir.Visible = !mostrarDetalle;
+        pestañaDetalle.Visible = mostrarDetalle;
+        Theme.StyleTabButton(btnPestanaAbrir, !mostrarDetalle);
+        Theme.StyleTabButton(btnPestanaDetalle, mostrarDetalle);
     }
 
     private TipoVenta TipoSeleccionado => ((TipoVentaOpcion)cboTipoVenta.SelectedItem!).Tipo;
@@ -138,14 +172,22 @@ public partial class FrmVentas : BasePage
         barra.Controls.Add(lblAyudaMesas);
 
         Theme.StyleGrid(gridMesas);
+        gridMesas.CellFormatting += FormatearEstadoMesa;
         gridMesas.SelectionChanged += (_, _) => ActualizarEstadoBotones();
-        pestañaAbrir.BackColor = Theme.DeepCharcoal;
-        pestañaAbrir.UseVisualStyleBackColor = false;
-        pestañaDetalle.BackColor = Theme.DeepCharcoal;
-        pestañaDetalle.UseVisualStyleBackColor = false;
-
         pestañaAbrir.Controls.Add(gridMesas);
         pestañaAbrir.Controls.Add(barra);
+    }
+
+    private void FormatearEstadoMesa(object? sender, DataGridViewCellFormattingEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.ColumnIndex < 0 ||
+            gridMesas.Columns[e.ColumnIndex].Name != nameof(MesaVenta.Estado))
+            return;
+
+        if (gridMesas.Rows[e.RowIndex].DataBoundItem is not MesaVenta mesa)
+            return;
+
+        e.CellStyle.ForeColor = mesa.Ocupada ? Theme.StatusDanger : Theme.StatusSuccess;
     }
 
     private void ConstruirPestanaDetalle()
@@ -462,7 +504,7 @@ public partial class FrmVentas : BasePage
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             CargarMesas();
             CargarVentasPendientes(ventaId);
-            pestañas.SelectedTab = pestañaDetalle;
+            MostrarPestanaDetalle(true);
         }
         catch (InvalidOperationException ex)
         {
