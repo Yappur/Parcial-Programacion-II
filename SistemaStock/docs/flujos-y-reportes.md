@@ -143,6 +143,10 @@ ORDER BY m.numero;
 
 Todos consideran solo ventas `CERRADA`, salvo el historial, que muestra todas con su estado.
 
+**Dashboard**
+
+El resumen del día usa ventas `CERRADA` cuya `fecha_cierre` cae en el día actual. El total es la suma de `total` y la cantidad es el conteo de esas ventas. El conteo de productos incluye solo productos activos. El indicador de stock bajo suma ingredientes activos por debajo de su mínimo y productos activos `DIRECTO` en esa misma condición; el stock `POR_RECETA` se controla mediante sus ingredientes. Las últimas ventas incluyen cualquier estado y se ordenan por fecha descendente, con un máximo de ocho filas. El usuario conectado se toma de la sesión autenticada y no requiere otra consulta.
+
 **Historial de ventas**
 
 ```sql

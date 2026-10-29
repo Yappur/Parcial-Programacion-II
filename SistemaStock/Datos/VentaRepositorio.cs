@@ -5,6 +5,103 @@ namespace SistemaStock.Datos;
 
 internal sealed class VentaRepositorio
 {
+    public ResumenDashboard ObtenerResumenDashboard()
+    {
+        using var cn = Database.OpenConnection();
+        using var cmd = new MySqlCommand("""
+            SELECT
+                (SELECT COALESCE(SUM(total), 0) FROM ventas
+                 WHERE estado = 'CERRADA' AND fecha_cierre >= CURDATE() AND fecha_cierre < CURDATE() + INTERVAL 1 DAY) AS ventas_dia,
+                (SELECT COUNT(*) FROM ventas
+                 WHERE estado = 'CERRADA' AND fecha_cierre >= CURDATE() AND fecha_cierre < CURDATE() + INTERVAL 1 DAY) AS cantidad_ventas,
+                (SELECT COUNT(*) FROM productos WHERE activo = TRUE) AS cantidad_productos,
+                (SELECT COUNT(*) FROM ingredientes WHERE activo = TRUE AND stock <= stock_minimo) +
+                (SELECT COUNT(*) FROM productos WHERE activo = TRUE AND tipo_stock = 'DIRECTO' AND stock <= stock_minimo) AS stock_bajo,
+                (SELECT COUNT(*) FROM ingredientes WHERE activo = TRUE) AS cantidad_ingredientes,
+                (SELECT COUNT(*) FROM mesas WHERE activo = TRUE AND id IN (SELECT mesa_id FROM ventas WHERE estado = 'PENDIENTE' AND mesa_id IS NOT NULL)) AS mesas_ocupadas,
+                (SELECT COUNT(*) FROM mesas WHERE activo = TRUE) AS mesas_activas;
+            """, cn);
+
+        ResumenDashboard resumen;
+        using (var rd = cmd.ExecuteReader())
+        {
+            if (!rd.Read())
+                throw new InvalidOperationException("No se pudo obtener el resumen del dashboard.");
+            resumen = new ResumenDashboard
+            {
+                VentasDelDia = rd.GetDecimal("ventas_dia"),
+                CantidadVentasDelDia = rd.GetInt32("cantidad_ventas"),
+                CantidadProductos = rd.GetInt32("cantidad_productos"),
+                CantidadStockBajo = rd.GetInt32("stock_bajo"),
+                CantidadIngredientes = rd.GetInt32("cantidad_ingredientes"),
+                MesasOcupadas = rd.GetInt32("mesas_ocupadas"),
+                MesasActivas = rd.GetInt32("mesas_activas")
+            };
+        }
+
+        var ultimasVentas = new List<VentaDashboard>();
+        var stockBajo = new List<StockBajoDashboard>();
+        using (var stockCmd = new MySqlCommand("""
+            SELECT nombre COLLATE utf8mb4_general_ci AS nombre,
+                   CONCAT(stock, ' ', unidad) COLLATE utf8mb4_general_ci AS stock
+            FROM ingredientes WHERE activo = TRUE AND stock <= stock_minimo
+            UNION ALL
+            SELECT nombre COLLATE utf8mb4_general_ci AS nombre,
+                   CAST(stock AS CHAR) COLLATE utf8mb4_general_ci AS stock
+            FROM productos WHERE activo = TRUE AND tipo_stock = 'DIRECTO' AND stock <= stock_minimo
+            ORDER BY nombre LIMIT 8;
+            """, cn))
+        using (var stockRd = stockCmd.ExecuteReader())
+            while (stockRd.Read()) stockBajo.Add(new StockBajoDashboard { Nombre = stockRd.GetString("nombre"), Stock = stockRd.GetString("stock") });
+        using (var recientes = new MySqlCommand("""
+            SELECT id, COALESCE(fecha_cierre, fecha_hora) AS fecha, tipo_venta, total, estado
+            FROM ventas
+            ORDER BY COALESCE(fecha_cierre, fecha_hora) DESC, id DESC
+            LIMIT 8;
+            """, cn))
+        using (var rd = recientes.ExecuteReader())
+        {
+            while (rd.Read())
+            {
+                string tipo = rd.GetString("tipo_venta") switch
+                {
+                    "MESA" => "Mesa",
+                    "DELIVERY" => "Delivery",
+                    "MOSTRADOR" => "Mostrador",
+                    var valor => valor
+                };
+                string estado = rd.GetString("estado") switch
+                {
+                    "CERRADA" => "Cerrada",
+                    "PENDIENTE" => "Pendiente",
+                    "ANULADA" => "Anulada",
+                    var valor => valor
+                };
+                ultimasVentas.Add(new VentaDashboard
+                {
+                    Id = rd.GetInt32("id"),
+                    Fecha = rd.GetDateTime("fecha"),
+                    Tipo = tipo,
+                    Total = rd.GetDecimal("total"),
+                    Estado = estado
+                });
+            }
+        }
+
+        return new ResumenDashboard
+        {
+            VentasDelDia = resumen.VentasDelDia,
+            CantidadVentasDelDia = resumen.CantidadVentasDelDia,
+            CantidadProductos = resumen.CantidadProductos,
+            CantidadStockBajo = resumen.CantidadStockBajo,
+            CantidadIngredientes = resumen.CantidadIngredientes,
+            MesasOcupadas = resumen.MesasOcupadas,
+            MesasActivas = resumen.MesasActivas,
+            UltimasVentas = ultimasVentas,
+            ProductosStockBajo = stockBajo
+        };
+    }
+
     public DateTime FechaMinimaVenta()
     {
         using var cn = Database.OpenConnection();
