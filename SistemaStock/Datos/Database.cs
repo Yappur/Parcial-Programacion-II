@@ -47,6 +47,33 @@ internal static class Database
             """, connection);
         command.ExecuteNonQuery();
 
+        using var activityCommand = new MySqlCommand("""
+            CREATE TABLE IF NOT EXISTS actividades (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                usuario_id INT NULL,
+                tipo VARCHAR(20) NOT NULL,
+                accion VARCHAR(100) NOT NULL,
+                detalle VARCHAR(255) NOT NULL,
+                precio DECIMAL(10,2) NULL,
+                fecha_hora DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX ix_actividades_fecha (fecha_hora),
+                CONSTRAINT fk_actividades_usuarios FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+            ) ENGINE=InnoDB;
+            """, connection);
+        activityCommand.ExecuteNonQuery();
+        using (var activityPriceCheck = new MySqlCommand("""
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'actividades' AND COLUMN_NAME = 'precio';
+            """, connection))
+        {
+            if (Convert.ToInt32(activityPriceCheck.ExecuteScalar()) == 0)
+            {
+                using var addActivityPrice = new MySqlCommand(
+                    "ALTER TABLE actividades ADD COLUMN precio DECIMAL(10,2) NULL AFTER detalle;", connection);
+                addActivityPrice.ExecuteNonQuery();
+            }
+        }
+
         using var categoryCommand = new MySqlCommand("""
             CREATE TABLE IF NOT EXISTS categorias (
                 id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,

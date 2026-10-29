@@ -297,6 +297,7 @@ internal sealed class VentaRepositorio
 
             RecalcularTotal(cn, tx, ventaId);
             tx.Commit();
+            ActividadRepositorio.Registrar("VENTA", "Agregó un producto a una venta", $"{producto.Nombre} · {cantidad} unidades · Venta #{ventaId}", producto.Precio * cantidad);
         }
         catch
         {
@@ -362,6 +363,7 @@ internal sealed class VentaRepositorio
 
             RecalcularTotal(cn, tx, ventaId);
             tx.Commit();
+            ActividadRepositorio.Registrar("VENTA", "Quitó un producto de una venta", $"{producto.Nombre} · Venta #{ventaId}");
         }
         catch
         {
@@ -383,6 +385,13 @@ internal sealed class VentaRepositorio
         try
         {
             ValidarVentaPendiente(cn, tx, ventaId);
+            decimal totalVenta;
+            using (var leerTotal = new MySqlCommand(
+                "SELECT total FROM ventas WHERE id = @ventaId;", cn, tx))
+            {
+                leerTotal.Parameters.AddWithValue("@ventaId", ventaId);
+                totalVenta = Convert.ToDecimal(leerTotal.ExecuteScalar());
+            }
             using var cmd = new MySqlCommand("""
                 UPDATE ventas
                 SET estado = 'CERRADA', medio_pago = @medioPago,
@@ -396,6 +405,7 @@ internal sealed class VentaRepositorio
                 throw new InvalidOperationException("La venta ya no está pendiente y no se puede cerrar.");
 
             tx.Commit();
+            ActividadRepositorio.Registrar("VENTA", "Cerró una venta", $"Venta #{ventaId} · {medioPago}", totalVenta);
         }
         catch
         {
@@ -460,6 +470,7 @@ internal sealed class VentaRepositorio
             }
 
             tx.Commit();
+            ActividadRepositorio.Registrar("VENTA", "Anuló una venta", $"Venta #{ventaId}");
         }
         catch
         {
@@ -537,6 +548,7 @@ internal sealed class VentaRepositorio
             cmd.ExecuteNonQuery();
             var id = checked((int)cmd.LastInsertedId);
             tx.Commit();
+            ActividadRepositorio.Registrar("VENTA", "Abrió una venta", $"Venta #{id} · {tipo}");
             return id;
         }
         catch

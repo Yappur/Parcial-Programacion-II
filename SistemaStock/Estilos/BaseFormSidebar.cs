@@ -1,5 +1,6 @@
 using System.Drawing;
 using FontAwesome.Sharp;
+using SistemaStock.Datos;
 using SistemaStock.Formularios;
 using SistemaStock.Modelos.Usuarios;
 
@@ -33,6 +34,7 @@ public class BaseFormSidebar : BaseForm
     protected BaseFormSidebar(PaginaApp paginaInicial, User? usuario)
     {
         usuarioActual = usuario ?? new User();
+        ActividadRepositorio.UsuarioActualId = usuarioActual.Id > 0 ? usuarioActual.Id : null;
         ConstruirSidebar();
         Navegar(paginaInicial);
     }
@@ -182,36 +184,70 @@ public class BaseFormSidebar : BaseForm
 /// <summary>Base de las secciones embebidas en PageContent.</summary>
 public class BasePage : UserControl
 {
-    private readonly Panel header = new();
+    private readonly TableLayoutPanel header = new() { Dock = DockStyle.Top, Height = 64, BackColor = Theme.DeepCharcoal, ColumnCount = 2, RowCount = 1 };
+    private readonly Panel titlePanel = new() { Dock = DockStyle.Fill, BackColor = Theme.DeepCharcoal };
+    private readonly Label lblFecha = new() { Dock = DockStyle.Fill, ForeColor = Theme.TextPrimary, TextAlign = ContentAlignment.MiddleLeft };
+    private readonly Label lblHora = new() { Dock = DockStyle.Fill, ForeColor = Theme.TextPrimary, TextAlign = ContentAlignment.MiddleLeft };
+    private readonly IconPictureBox iconoFecha = new() { IconChar = IconChar.Calendar, IconColor = Theme.BlazeOrange, IconSize = 20, SizeMode = PictureBoxSizeMode.CenterImage, Dock = DockStyle.Fill, BackColor = Theme.DeepCharcoal };
+    private readonly IconPictureBox iconoHora = new() { IconChar = IconChar.Clock, IconColor = Theme.TextSecondary, IconSize = 20, SizeMode = PictureBoxSizeMode.CenterImage, Dock = DockStyle.Fill, BackColor = Theme.DeepCharcoal };
+    private readonly TableLayoutPanel fechaHora = new() { BackColor = Theme.DeepCharcoal, ColumnCount = 2, RowCount = 2, Margin = Padding.Empty, Dock = DockStyle.Fill };
+    private readonly System.Windows.Forms.Timer reloj = new() { Interval = 1000 };
     protected Panel PageContent { get; } = new();
 
     public BasePage()
     {
         BackColor = Theme.DeepCharcoal;
-        header.Dock = DockStyle.Top;
-        header.Height = 64;
-        header.BackColor = Theme.DeepCharcoal;
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 250));
+        header.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        fechaHora.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 28));
+        fechaHora.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        fechaHora.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        fechaHora.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        fechaHora.Controls.Add(iconoFecha, 0, 0);
+        fechaHora.Controls.Add(lblFecha, 1, 0);
+        fechaHora.Controls.Add(iconoHora, 0, 1);
+        fechaHora.Controls.Add(lblHora, 1, 1);
+        header.Controls.Add(titlePanel, 0, 0);
+        header.Controls.Add(fechaHora, 1, 0);
         Controls.Add(PageContent);
         PageContent.Dock = DockStyle.Fill;
         PageContent.BackColor = Theme.DeepCharcoal;
         Controls.Add(header);
+        reloj.Tick += (_, _) => ActualizarReloj();
+        reloj.Start();
+        Disposed += (_, _) => reloj.Dispose();
+        ActualizarReloj();
     }
 
     protected void AddPageTitle(string titulo, string? subtitulo = null)
     {
         if (!string.IsNullOrWhiteSpace(subtitulo))
-            header.Controls.Add(new Label
+            titlePanel.Controls.Add(new Label
             {
                 Text = subtitulo, Dock = DockStyle.Top, Height = 24,
                 ForeColor = Theme.TextSecondary, Font = Theme.BodyFont,
                 TextAlign = ContentAlignment.MiddleLeft
             });
-        header.Controls.Add(new Label
+        titlePanel.Controls.Add(new Label
         {
             Text = titulo, Dock = DockStyle.Top, Height = 38,
             ForeColor = Theme.TextPrimary, Font = Theme.HeadingFont,
             TextAlign = ContentAlignment.MiddleLeft
         });
+    }
+
+    private void ActualizarReloj()
+    {
+        var ahora = DateTime.Now;
+        lblFecha.Text = ahora.ToString("dddd, dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-AR"));
+        lblHora.Text = ahora.ToString("HH:mm");
+        int anchoTexto = Math.Max(
+            TextRenderer.MeasureText(lblFecha.Text, lblFecha.Font).Width,
+            TextRenderer.MeasureText(lblHora.Text, lblHora.Font).Width);
+        int ancho = anchoTexto + 36;
+        fechaHora.Width = ancho;
+        header.ColumnStyles[1].Width = ancho;
     }
 
     protected DataGridView AddEmptyGrid()

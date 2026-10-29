@@ -58,6 +58,7 @@ internal sealed class ProductoRepositorio
         using var cmd = new MySqlCommand("INSERT INTO productos(nombre, precio, categoria_id, tipo_stock, stock, stock_minimo, activo) VALUES(@nombre, @precio, @categoriaId, @tipoStock, @stock, @stockMinimo, @activo)", db);
         AgregarParametros(cmd, producto);
         cmd.ExecuteNonQuery();
+        ActividadRepositorio.Registrar("PRODUCTO", "Agregó un producto", producto.Nombre);
     }
 
     public void Update(Producto producto)
@@ -68,14 +69,19 @@ internal sealed class ProductoRepositorio
         AgregarParametros(cmd, producto);
         cmd.Parameters.AddWithValue("@codigo", producto.Codigo);
         cmd.ExecuteNonQuery();
+        ActividadRepositorio.Registrar("PRODUCTO", "Modificó un producto", producto.Nombre);
     }
 
     public void Deactivate(int codigo)
     {
         using var db = Database.OpenConnection();
+        using var nombreCmd = new MySqlCommand("SELECT nombre FROM productos WHERE codigo = @codigo;", db);
+        nombreCmd.Parameters.AddWithValue("@codigo", codigo);
+        string nombre = Convert.ToString(nombreCmd.ExecuteScalar()) ?? $"Código {codigo}";
         using var cmd = new MySqlCommand("UPDATE productos SET activo=FALSE WHERE codigo=@codigo", db);
         cmd.Parameters.AddWithValue("@codigo", codigo);
         cmd.ExecuteNonQuery();
+        ActividadRepositorio.Registrar("PRODUCTO", "Quitó un producto", nombre);
     }
 
     private static void AgregarParametros(MySqlCommand cmd, Producto producto)

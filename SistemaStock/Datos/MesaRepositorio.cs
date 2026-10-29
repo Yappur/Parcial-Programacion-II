@@ -38,6 +38,7 @@ internal sealed class MesaRepositorio
             """, db);
         AgregarParametros(cmd, mesa);
         EjecutarConNumeroUnico(cmd);
+        ActividadRepositorio.Registrar("MESA", "Agregó una mesa", $"Mesa {mesa.Numero}");
     }
 
     public void Update(Mesa mesa)
@@ -51,14 +52,19 @@ internal sealed class MesaRepositorio
         AgregarParametros(cmd, mesa);
         cmd.Parameters.AddWithValue("@id", mesa.Id);
         EjecutarConNumeroUnico(cmd);
+        ActividadRepositorio.Registrar("MESA", "Modificó una mesa", $"Mesa {mesa.Numero}");
     }
 
     public void Deactivate(int id)
     {
         using var db = Database.OpenConnection();
+        using var numeroCmd = new MySqlCommand("SELECT numero FROM mesas WHERE id = @id;", db);
+        numeroCmd.Parameters.AddWithValue("@id", id);
+        string numero = Convert.ToString(numeroCmd.ExecuteScalar()) ?? $"ID {id}";
         using var cmd = new MySqlCommand("UPDATE mesas SET activo = 0 WHERE id = @id;", db);
         cmd.Parameters.AddWithValue("@id", id);
         cmd.ExecuteNonQuery();
+        ActividadRepositorio.Registrar("MESA", "Quitó una mesa", $"Mesa {numero}");
     }
 
     public void Activate(int id)
@@ -67,6 +73,7 @@ internal sealed class MesaRepositorio
         using var cmd = new MySqlCommand("UPDATE mesas SET activo = 1 WHERE id = @id;", db);
         cmd.Parameters.AddWithValue("@id", id);
         cmd.ExecuteNonQuery();
+        ActividadRepositorio.Registrar("MESA", "Activó una mesa", $"ID {id}");
     }
 
     private static void AgregarParametros(MySqlCommand cmd, Mesa mesa)

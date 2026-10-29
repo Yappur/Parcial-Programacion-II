@@ -42,6 +42,7 @@ internal sealed class UserRepository
         cmd.Parameters.AddWithValue("@hash", PasswordHasher.Hash(password));
         cmd.Parameters.AddWithValue("@role", role);
         cmd.ExecuteNonQuery();
+        ActividadRepositorio.Registrar("USUARIO", "Agregó un usuario", $"{fullName} · {role}");
     }
 
     public void CreateFirstAdmin(string username, string fullName, string password) => Create(username, fullName, password, "Administrador");
@@ -60,14 +61,19 @@ internal sealed class UserRepository
         cmd.Parameters.AddWithValue("@id", user.Id);
         if (!string.IsNullOrWhiteSpace(newPassword)) cmd.Parameters.AddWithValue("@hash", PasswordHasher.Hash(newPassword));
         cmd.ExecuteNonQuery();
+        ActividadRepositorio.Registrar("USUARIO", "Modificó un usuario", user.FullName);
     }
 
     public void Deactivate(int id)
     {
         using var db = Database.OpenConnection();
+        using var nombreCmd = new MySqlCommand("SELECT nombre_completo FROM usuarios WHERE id = @id;", db);
+        nombreCmd.Parameters.AddWithValue("@id", id);
+        string nombre = Convert.ToString(nombreCmd.ExecuteScalar()) ?? $"ID {id}";
         using var cmd = new MySqlCommand("UPDATE usuarios SET activo=FALSE WHERE id=@id", db);
         cmd.Parameters.AddWithValue("@id", id);
         cmd.ExecuteNonQuery();
+        ActividadRepositorio.Registrar("USUARIO", "Quitó un usuario", nombre);
     }
 
     private static User ReadUser(MySqlDataReader reader) => new()

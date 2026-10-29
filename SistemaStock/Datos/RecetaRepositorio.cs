@@ -82,6 +82,7 @@ internal sealed class RecetaRepositorio
             }
 
             transaction.Commit();
+            ActividadRepositorio.Registrar("RECETA", "Actualizó una receta", $"Producto #{productoCodigo} · {receta.Count} ingredientes");
         }
         catch
         {

@@ -45,6 +45,7 @@ internal sealed class IngredienteRepositorio
             """, db);
         AgregarParametros(cmd, ingrediente);
         cmd.ExecuteNonQuery();
+        ActividadRepositorio.Registrar("INGREDIENTE", "Agregó un ingrediente", ingrediente.Nombre);
     }
 
     public void Update(Ingrediente ingrediente)
@@ -60,15 +61,20 @@ internal sealed class IngredienteRepositorio
         AgregarParametros(cmd, ingrediente);
         cmd.Parameters.AddWithValue("@id", ingrediente.Id);
         cmd.ExecuteNonQuery();
+        ActividadRepositorio.Registrar("INGREDIENTE", "Modificó un ingrediente", ingrediente.Nombre);
     }
 
     public void Deactivate(int id)
     {
         using var db = Database.OpenConnection();
+        using var nombreCmd = new MySqlCommand("SELECT nombre FROM ingredientes WHERE id = @id;", db);
+        nombreCmd.Parameters.AddWithValue("@id", id);
+        string nombre = Convert.ToString(nombreCmd.ExecuteScalar()) ?? $"ID {id}";
         using var cmd = new MySqlCommand(
             "UPDATE ingredientes SET activo = FALSE WHERE id = @id;", db);
         cmd.Parameters.AddWithValue("@id", id);
         cmd.ExecuteNonQuery();
+        ActividadRepositorio.Registrar("INGREDIENTE", "Quitó un ingrediente", nombre);
     }
 
     private static void AgregarParametros(MySqlCommand cmd, Ingrediente ingrediente)

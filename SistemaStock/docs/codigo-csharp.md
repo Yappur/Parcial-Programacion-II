@@ -30,6 +30,7 @@ public static void Initialize()
     connection.Open();
 
     CrearTablaUsuarios(connection);
+    CrearTablaActividades(connection);
     CrearTablaCategorias(connection);
     CrearTablaMesas(connection);
     CrearTablaIngredientes(connection);
@@ -59,6 +60,8 @@ private static void CrearTablaMesas(MySqlConnection connection) =>
 ```
 
 `builder` y `dbName` salen del código que ya tiene `Database.cs`; el bloque de arriba muestra la forma, no reemplaza lo existente. El SQL de cada tabla está en `esquema.md`.
+
+`ActividadRepositorio` registra después de las operaciones exitosas de los módulos y lista los eventos recientes del dashboard. `BaseFormSidebar` establece el ID del usuario actual para asociar cada evento a su sesión.
 
 ## Modelos y enums
 
